@@ -1,0 +1,5 @@
+{
+  "name": "PiMinnie WebUI",
+  "description": "A lightweight, high-performance Gemini LLM interface designed for Raspberry Pi hosting. Built with React for low memory footprint compared to Python-based alternatives.",
+  "requestFramePermissions": []
+}
