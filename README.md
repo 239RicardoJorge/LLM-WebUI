@@ -1,20 +1,33 @@
+# ChatKitty
+
+A modern, local-first LLM WebUI that runs on your hardware (like Raspberry Pi).
+
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+  <h3>ChatKitty Interface</h3>
 </div>
 
-# Run and deploy your AI Studio app
-
-This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/drive/1CtLvYTnb-IkN8ThWiA9koFT6plQSr06L
+## Features
+- **Local Priority**: Designed to run efficiently on low-power devices.
+- **Multi-Provider**: Support for Google Gemini, OpenAI, and Anthropic.
+- **System Monitoring**: Real-time visualization of your host device's CPU and RAM usage.
+- **Secure**: API Keys are stored locally in your browser.
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisites:** Node.js
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```bash
+   npm install
+   ```
+
+2. Run the application (Backend + Frontend):
+   ```bash
+   # Terminal 1 (Backend for System Stats)
+   node server.js
+
+   # Terminal 2 (Frontend)
+   npm run dev
+   ```
+
+3. Open your browser at the local URL provided (usually http://localhost:3000 or similar).
