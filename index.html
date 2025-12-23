@@ -1,70 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>PiMinnie</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      :root {
-        --bg-depth: #000000;
-        --glass-border: rgba(255, 255, 255, 0.08);
-        --glass-surface: rgba(28, 28, 30, 0.4);
-        --accent-glow: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.15) 0%, rgba(0, 0, 0, 0) 50%);
-      }
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
-        background-color: var(--bg-depth);
-        background-image: var(--accent-glow);
-        background-attachment: fixed;
-        background-size: 100% 100vh;
-        background-repeat: no-repeat;
-        color: #F5F5F7;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        overflow: hidden; /* App handles scroll */
-      }
 
-      /* Premium Scrollbar */
-      ::-webkit-scrollbar {
-        width: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 10px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ChatKitty</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg-depth: #000000;
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-surface: rgba(28, 28, 30, 0.4);
+      --accent-glow: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.15) 0%, rgba(0, 0, 0, 0) 50%);
+    }
 
-      /* Utilities */
-      .glass-panel {
-        background: rgba(22, 22, 23, 0.6);
-        backdrop-filter: blur(24px) saturate(140%);
-        -webkit-backdrop-filter: blur(24px) saturate(140%);
-        border: 1px solid var(--glass-border);
-      }
-      
-      .text-glow {
-        text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-      }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background-color: var(--bg-depth);
+      background-image: var(--accent-glow);
+      background-attachment: fixed;
+      background-size: 100% 100vh;
+      background-repeat: no-repeat;
+      color: #F5F5F7;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow: hidden;
+      /* App handles scroll */
+    }
 
-      .animate-fade-up {
-        animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        opacity: 0;
-        transform: translateY(10px);
-      }
+    /* Premium Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
 
-      @keyframes fadeUp {
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Utilities */
+    .glass-panel {
+      background: rgba(22, 22, 23, 0.6);
+      backdrop-filter: blur(24px) saturate(140%);
+      -webkit-backdrop-filter: blur(24px) saturate(140%);
+      border: 1px solid var(--glass-border);
+    }
+
+    .text-glow {
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+
+    .animate-fade-up {
+      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    @keyframes fadeUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
       }
-    </style>
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
@@ -79,8 +85,10 @@
 }
 </script>
 </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
 </html>

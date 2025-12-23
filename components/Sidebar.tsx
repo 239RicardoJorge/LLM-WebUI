@@ -60,16 +60,27 @@ const Sidebar: React.FC<SidebarProps> = ({
     return false;
   });
 
+  // Poll System Stats from Backend
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Simulate real-time fluctuation for 4 cores
-      setCpuCores(prev => prev.map(core => {
-        const change = (Math.random() * 20 - 10);
-        return Math.min(Math.max(core + change, 5), 95);
-      }));
-      // Simulate System RAM (Overall Host)
-      setRamUsage(prev => Math.min(Math.max(prev + (Math.random() * 2 - 1), 35), 85));
-    }, 1500);
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/status');
+        if (res.ok) {
+          const data = await res.json();
+          // Ensure we have 4 cores for UI consistency (filling with avg if less, checking length if more)
+          const coreData = data.cpu.cores.length > 0 ? data.cpu.cores : [data.cpu.avg, data.cpu.avg, data.cpu.avg, data.cpu.avg];
+          // Take first 4 cores or slice
+          setCpuCores(coreData.slice(0, 4));
+          setRamUsage(data.memory.percentage);
+        }
+      } catch (err) {
+        // Silent fail, keep previous or default
+        console.warn("Stats fetch failed");
+      }
+    };
+
+    fetchStats(); // Initial
+    const interval = setInterval(fetchStats, 2000); // Poll every 2s
     return () => clearInterval(interval);
   }, []);
 
