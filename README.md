@@ -1,9 +1,9 @@
-# ChatKitty
+# CCS - Clear Context System
 
 A modern, local-first LLM WebUI that runs on your hardware (like Raspberry Pi).
 
 <div align="center">
-  <h3>ChatKitty Interface</h3>
+  <h3>CCS - Clear Context System Interface</h3>
 </div>
 
 ## Features

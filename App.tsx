@@ -5,17 +5,31 @@ import { UnifiedService } from './services/geminiService';
 import { ChatMessage, Role, AVAILABLE_MODELS, Attachment, ApiKeys } from './types';
 
 const App: React.FC = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Initialize messages from sessionStorage to survive reloads/minimization
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const saved = sessionStorage.getItem('ccs_chat_messages');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Failed to load session history", e);
+      return [];
+    }
+  });
+
+  // Persist messages to sessionStorage whenever they change
+  useEffect(() => {
+    sessionStorage.setItem('ccs_chat_messages', JSON.stringify(messages));
+  }, [messages]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentModel, setCurrentModel] = useState(AVAILABLE_MODELS[0].id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
+
   // Initialize keys from localStorage
   const [apiKeys, setApiKeys] = useState<ApiKeys>(() => {
     const saved = localStorage.getItem('app_api_keys');
     return saved ? JSON.parse(saved) : { google: '', openai: '', anthropic: '' };
   });
-  
+
   const serviceRef = useRef<UnifiedService | null>(null);
 
   // Get current model definition
@@ -24,11 +38,11 @@ const App: React.FC = () => {
   // Initialize service on mount and when dependencies change
   useEffect(() => {
     const activeKey = apiKeys[activeModelDef.provider];
-    
+
     if (!serviceRef.current) {
-        serviceRef.current = new UnifiedService(currentModel, activeModelDef.provider, activeKey);
+      serviceRef.current = new UnifiedService(currentModel, activeModelDef.provider, activeKey);
     } else {
-        serviceRef.current.setConfig(currentModel, activeModelDef.provider, activeKey);
+      serviceRef.current.setConfig(currentModel, activeModelDef.provider, activeKey);
     }
   }, [currentModel, apiKeys, activeModelDef]);
 
@@ -39,12 +53,12 @@ const App: React.FC = () => {
     // Fallback Logic: If the current model's provider key was removed, switch to another available model
     const currentProvider = activeModelDef.provider;
     if (!newKeys[currentProvider]) {
-        const firstAvailable = AVAILABLE_MODELS.find(m => newKeys[m.provider]);
-        if (firstAvailable) {
-            setCurrentModel(firstAvailable.id);
-            setMessages([]); // Clear chat on forced switch
-        }
-        // If no keys left at all, we stay on current but Sidebar will show "No Models"
+      const firstAvailable = AVAILABLE_MODELS.find(m => newKeys[m.provider]);
+      if (firstAvailable) {
+        setCurrentModel(firstAvailable.id);
+        setMessages([]); // Clear chat on forced switch
+      }
+      // If no keys left at all, we stay on current but Sidebar will show "No Models"
     }
   };
 
@@ -53,32 +67,33 @@ const App: React.FC = () => {
     setSidebarOpen(false);
     // Service update is handled by useEffect
     // We clear messages on model switch for clean context (optional but safer for multi-provider)
-    setMessages([]); 
+    setMessages([]);
   };
 
   const handleClearChat = async () => {
     setMessages([]);
+    sessionStorage.removeItem('ccs_chat_messages');
     if (serviceRef.current) {
-        await serviceRef.current.resetSession();
+      await serviceRef.current.resetSession();
     }
     setSidebarOpen(false);
   };
 
   const handleSendMessage = async (content: string, attachment?: Attachment) => {
     if ((!content.trim() && !attachment) || !serviceRef.current) return;
-    
+
     // Check if key exists for current provider
     const currentProvider = activeModelDef.provider;
     if (!apiKeys[currentProvider]) {
-         setMessages(prev => [...prev, {
-            id: Date.now().toString(),
-            role: Role.MODEL,
-            content: `Please enter and save your API Key in the sidebar to use this model.`,
-            timestamp: Date.now(),
-            isError: true
-        }]);
-        setSidebarOpen(true);
-        return;
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        role: Role.MODEL,
+        content: `Please enter and save your API Key in the sidebar to use this model.`,
+        timestamp: Date.now(),
+        isError: true
+      }]);
+      setSidebarOpen(true);
+      return;
     }
 
     const newUserMsg: ChatMessage = {
@@ -96,7 +111,7 @@ const App: React.FC = () => {
     setMessages(prev => [...prev, {
       id: botMsgId,
       role: Role.MODEL,
-      content: '', 
+      content: '',
       timestamp: Date.now()
     }]);
 
@@ -106,16 +121,16 @@ const App: React.FC = () => {
 
       for await (const chunk of stream) {
         accumulatedText += chunk;
-        setMessages(prev => prev.map(msg => 
-          msg.id === botMsgId 
+        setMessages(prev => prev.map(msg =>
+          msg.id === botMsgId
             ? { ...msg, content: accumulatedText }
             : msg
         ));
       }
     } catch (error: any) {
       console.error("Chat error:", error);
-      setMessages(prev => prev.map(msg => 
-        msg.id === botMsgId 
+      setMessages(prev => prev.map(msg =>
+        msg.id === botMsgId
           ? { ...msg, content: `Error: ${error.message || "Connection Failed"}`, isError: true }
           : msg
       ));
@@ -126,7 +141,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-full relative overflow-hidden">
-      <Sidebar 
+      <Sidebar
         currentModel={currentModel}
         onModelChange={handleModelChange}
         onClearChat={handleClearChat}
@@ -135,9 +150,9 @@ const App: React.FC = () => {
         apiKeys={apiKeys}
         onApiKeysChange={handleApiKeysChange}
       />
-      
+
       <main className="flex-1 h-full relative z-0">
-        <ChatInterface 
+        <ChatInterface
           messages={messages}
           isLoading={isLoading}
           onSendMessage={handleSendMessage}

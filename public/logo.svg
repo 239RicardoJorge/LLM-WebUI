@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Dark Rounded Background (mimicking bg-white/5 border-white/10) -->
+  <rect x="0" y="0" width="512" height="512" rx="120" ry="120" fill="#1A1A1A" stroke="#333333" stroke-width="20" />
+  
+  <!-- Terminal Icon (Lucide style) -->
+  <g transform="translate(106, 106) scale(12.5)" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.6">
+    <polyline points="4 17 10 11 4 5"></polyline>
+    <line x1="12" y1="19" x2="20" y2="19"></line>
+  </g>
+</svg>
