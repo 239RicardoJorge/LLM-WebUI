@@ -31,7 +31,23 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Simulated System Stats (Raspberry Pi 4-core simulation)
   const [cpuCores, setCpuCores] = useState<number[]>([12, 15, 8, 20]);
   const [ramUsage, setRamUsage] = useState(45);
-  const [keysExpanded, setKeysExpanded] = useState(true);
+  const [keysExpanded, setKeysExpanded] = useState(() => {
+    const saved = localStorage.getItem('ccs_sidebar_keys_expanded');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ccs_sidebar_keys_expanded', JSON.stringify(keysExpanded));
+  }, [keysExpanded]);
+
+  const [modelsExpanded, setModelsExpanded] = useState(() => {
+    const saved = localStorage.getItem('ccs_sidebar_models_expanded');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ccs_sidebar_models_expanded', JSON.stringify(modelsExpanded));
+  }, [modelsExpanded]);
 
 
 
@@ -203,10 +219,15 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Model Selection */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-white/40">
+              <button
+                onClick={() => setModelsExpanded(!modelsExpanded)}
+                className="flex items-center gap-2 text-white/40 mb-2 w-full hover:text-white/60 transition-colors"
+              >
                 <Settings2 className="w-3 h-3" />
-                <span className="text-[10px] font-bold tracking-widest uppercase">Available Models</span>
-              </div>
+                <span className="text-[10px] font-bold tracking-widest uppercase flex-1 text-left">Available Models</span>
+                {modelsExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+              </button>
+
               <div className="space-y-1">
                 {availableModels.length === 0 ? (
                   <div className="text-center py-6 px-4 border border-dashed border-white/10 rounded-xl bg-white/5">
@@ -216,36 +237,39 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </p>
                   </div>
                 ) : (
-                  availableModels.map((model) => {
-                    const isActive = currentModel === model.id;
-                    return (
-                      <button
-                        key={model.id}
-                        onClick={() => onModelChange(model.id)}
-                        className={`
-                            w-full p-3 rounded-xl transition-all duration-300 border text-left group relative overflow-hidden
-                            ${isActive
-                            ? 'bg-white/5 border-white/10 shadow-lg'
-                            : 'bg-transparent border-transparent hover:bg-white/5'}
-                        `}
-                      >
-                        <div className="flex items-center justify-between mb-1 relative z-10">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[13px] font-medium tracking-tight ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-300'}`}>
-                              {model.name}
-                            </span>
-                            {model.provider === 'google' && <Zap className="w-3 h-3 text-blue-400" />}
-                            {model.provider === 'openai' && <Box className="w-3 h-3 text-green-400" />}
-                            {model.provider === 'anthropic' && <Activity className="w-3 h-3 text-orange-400" />}
+                  // If collapsed, only show the currently selected model. If expanded, show all.
+                  availableModels
+                    .filter(model => modelsExpanded || model.id === currentModel)
+                    .map((model) => {
+                      const isActive = currentModel === model.id;
+                      return (
+                        <button
+                          key={model.id}
+                          onClick={() => onModelChange(model.id)}
+                          className={`
+                              w-full p-3 rounded-xl transition-colors duration-300 border text-left group relative overflow-hidden
+                              ${isActive
+                              ? 'bg-white/5 border-white/10 shadow-lg'
+                              : 'bg-transparent border-white/0 hover:bg-white/5'}
+                          `}
+                        >
+                          <div className="flex items-center justify-between mb-1 relative z-10">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[13px] font-medium tracking-tight ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-300'}`}>
+                                {model.name}
+                              </span>
+                              {model.provider === 'google' && <Zap className="w-3 h-3 text-blue-400" />}
+                              {model.provider === 'openai' && <Box className="w-3 h-3 text-green-400" />}
+                              {model.provider === 'anthropic' && <Activity className="w-3 h-3 text-orange-400" />}
+                            </div>
+                            {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
                           </div>
-                          {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
-                        </div>
-                        <div className={`text-[10px] truncate ${isActive ? 'text-gray-400' : 'text-gray-700'}`}>
-                          {model.description}
-                        </div>
-                      </button>
-                    );
-                  })
+                          <div className={`text-[10px] truncate ${isActive ? 'text-gray-400' : 'text-gray-700'}`}>
+                            {model.description}
+                          </div>
+                        </button>
+                      );
+                    })
                 )}
               </div>
             </div>

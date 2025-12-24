@@ -40,6 +40,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [input]);
 
+  // Auto-focus on mount (desktop mainly)
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if ((!input.trim() && !attachment) || isLoading) return;
@@ -145,7 +150,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       </div>
                     )}
                     {msg.content && (
-                      <div className="bg-[#1A1A1A] border border-white/10 rounded-[2rem] px-8 py-5 text-[17px] text-white/90 leading-relaxed shadow-lg">
+                      <div className="bg-[#1A1A1A] border border-white/10 rounded-[2rem] px-8 py-5 text-[17px] text-white/90 leading-relaxed shadow-lg break-words break-all whitespace-pre-wrap">
                         {msg.content}
                       </div>
                     )}
@@ -157,7 +162,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       <div className="h-[1px] w-8 bg-white"></div>
                       <span className="text-[10px] font-bold tracking-widest uppercase">Response</span>
                     </div>
-                    <div className="prose-container">
+                    <div className="prose-container break-words break-all">
                       <MarkdownRenderer content={msg.content} />
                     </div>
                   </div>
@@ -165,13 +170,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </div>
             ))}
 
-            {isLoading && (
-              <div className="w-full animate-fade-up pl-4 md:pl-0">
+            {isLoading && (messages.length === 0 || messages[messages.length - 1].role !== Role.MODEL) && (
+              <div className="w-full animate-pulse pl-4 md:pl-0">
                 <div className="flex items-center gap-3 mb-4 opacity-50">
-                  <div className="h-[1px] w-8 bg-gradient-to-r from-purple-500 to-transparent"></div>
-                  <span className="text-xs font-bold tracking-widest uppercase">Thinking</span>
+                  <div className="h-[1px] w-8 bg-white"></div>
+                  <span className="text-[10px] font-bold tracking-widest uppercase">Thinking</span>
                 </div>
-                <span className="inline-block w-2 h-2 bg-white rounded-full animate-pulse shadow-[0_0_10px_white]"></span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -230,6 +234,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 rows={1}
                 className="w-full bg-transparent text-lg text-white placeholder-gray-600 px-2 py-4 focus:outline-none resize-none max-h-48"
                 disabled={isLoading}
+                autoFocus
               />
 
               <button

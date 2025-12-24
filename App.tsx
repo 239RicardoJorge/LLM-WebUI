@@ -5,23 +5,24 @@ import { UnifiedService } from './services/geminiService';
 import { ChatMessage, Role, AVAILABLE_MODELS, Attachment, ApiKeys } from './types';
 
 const App: React.FC = () => {
-  // Initialize messages from sessionStorage to survive reloads/minimization
+  // Initialize messages from localStorage to survive browser close
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
-      const saved = sessionStorage.getItem('ccs_chat_messages');
+      const saved = localStorage.getItem('ccs_chat_messages');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
-      console.error("Failed to load session history", e);
+      console.error("Failed to load chat history", e);
       return [];
     }
   });
 
-  // Persist messages to sessionStorage whenever they change
-  useEffect(() => {
-    sessionStorage.setItem('ccs_chat_messages', JSON.stringify(messages));
-  }, [messages]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentModel, setCurrentModel] = useState(AVAILABLE_MODELS[0].id);
+
+  // Initialize currentModel from localStorage
+  const [currentModel, setCurrentModel] = useState(() => {
+    return localStorage.getItem('ccs_current_model') || AVAILABLE_MODELS[0].id;
+  });
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Initialize keys from localStorage
@@ -29,6 +30,17 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('app_api_keys');
     return saved ? JSON.parse(saved) : { google: '', openai: '', anthropic: '' };
   });
+
+  // Persist messages to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('ccs_chat_messages', JSON.stringify(messages));
+  }, [messages]);
+
+  // Persist currentModel to localStorage
+  useEffect(() => {
+    localStorage.setItem('ccs_current_model', currentModel);
+  }, [currentModel]);
+
 
   const serviceRef = useRef<UnifiedService | null>(null);
 
@@ -72,7 +84,7 @@ const App: React.FC = () => {
 
   const handleClearChat = async () => {
     setMessages([]);
-    sessionStorage.removeItem('ccs_chat_messages');
+    localStorage.removeItem('ccs_chat_messages');
     if (serviceRef.current) {
       await serviceRef.current.resetSession();
     }
@@ -107,19 +119,27 @@ const App: React.FC = () => {
     setMessages(prev => [...prev, newUserMsg]);
     setIsLoading(true);
 
-    const botMsgId = (Date.now() + 1).toString();
-    setMessages(prev => [...prev, {
-      id: botMsgId,
-      role: Role.MODEL,
-      content: '',
-      timestamp: Date.now()
-    }]);
+    // Note: We do NOT create the empty bot message here.
+    // We wait for the first chunk to ensure "Thinking" -> "Response" transition.
 
     try {
       let accumulatedText = '';
+      let botMsgId: string | null = null;
+
       const stream = serviceRef.current.sendMessageStream(content, attachment);
 
       for await (const chunk of stream) {
+        // Create the message on the first chunk
+        if (!botMsgId) {
+          botMsgId = (Date.now() + 1).toString();
+          setMessages(prev => [...prev, {
+            id: botMsgId!,
+            role: Role.MODEL,
+            content: '',
+            timestamp: Date.now()
+          }]);
+        }
+
         accumulatedText += chunk;
         setMessages(prev => prev.map(msg =>
           msg.id === botMsgId
@@ -129,11 +149,14 @@ const App: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Chat error:", error);
-      setMessages(prev => prev.map(msg =>
-        msg.id === botMsgId
-          ? { ...msg, content: `Error: ${error.message || "Connection Failed"}`, isError: true }
-          : msg
-      ));
+      // If we failed before creating a message, create an error message now
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: Role.MODEL,
+        content: `Error: ${error.message || "Connection Failed"}`,
+        timestamp: Date.now(),
+        isError: true
+      }]);
     } finally {
       setIsLoading(false);
     }
