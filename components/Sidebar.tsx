@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Trash2, Key, Settings2, ChevronDown, ChevronRight, Zap, Box, ExternalLink, Save, CheckCircle2, Cpu, Activity } from 'lucide-react';
 import { AVAILABLE_MODELS, ApiKeys } from '../types';
 
+
 interface SidebarProps {
   currentModel: string;
   onModelChange: (modelId: string) => void;
@@ -32,6 +33,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [ramUsage, setRamUsage] = useState(45);
   const [keysExpanded, setKeysExpanded] = useState(true);
 
+
+
+  // Validate Google Keys
+
+
   // Local draft state for inputs. We don't push to App until user clicks Save.
   const [draftKeys, setDraftKeys] = useState<ApiKeys>(apiKeys);
   const [isSaved, setIsSaved] = useState(false);
@@ -52,13 +58,14 @@ const Sidebar: React.FC<SidebarProps> = ({
     setTimeout(() => setIsSaved(false), 2000);
   };
 
-  // Strict filtering: Only show models if the corresponding API Key is SAVED (in parent prop)
+  // Strict filtering: Only show models if the corresponding API Key is SAVED (un parent prop)
+  // Simple List: Just show the models defined in types.ts (User requested specific list)
   const availableModels = AVAILABLE_MODELS.filter(model => {
     if (model.provider === 'google' && apiKeys.google?.trim()) return true;
     if (model.provider === 'openai' && apiKeys.openai?.trim()) return true;
     if (model.provider === 'anthropic' && apiKeys.anthropic?.trim()) return true;
     return false;
-  });
+  }).sort((a, b) => a.provider.localeCompare(b.provider));
 
   // Poll System Stats from Backend
   useEffect(() => {

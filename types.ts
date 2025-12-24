@@ -25,6 +25,7 @@ export interface ModelOption {
   name: string;
   description: string;
   provider: Provider;
+  outputTokenLimit?: number;
 }
 
 export interface ApiKeys {
@@ -35,28 +36,22 @@ export interface ApiKeys {
 
 export const AVAILABLE_MODELS: ModelOption[] = [
   // Google Models
-  { 
-    id: 'gemini-3-flash-preview', 
-    name: 'Gemini 3.0 Flash', 
-    description: 'High speed, multimodal, low latency.',
-    provider: 'google'
-  },
-  { 
-    id: 'gemini-3-pro-preview', 
-    name: 'Gemini 3.0 Pro', 
-    description: 'Complex reasoning, coding, & vision.',
-    provider: 'google'
-  },
-  { 
-    id: 'gemini-flash-lite-latest', 
-    name: 'Gemini Flash Lite', 
-    description: 'Cost-effective, lightweight.',
+  {
+    id: 'gemini-2.5-flash-lite',
+    name: 'Gemini 2.5 Flash Lite',
+    description: 'Stable, cost-effective, fast.',
     provider: 'google'
   },
   {
-    id: 'gemini-2.5-flash-image',
-    name: 'Gemini 2.5 Image',
-    description: 'Optimized for image generation.',
+    id: 'gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
+    description: 'Balanced performance and latency.',
+    provider: 'google'
+  },
+  {
+    id: 'gemini-3-flash-preview',
+    name: 'Gemini 3.0 Flash (Preview)',
+    description: 'Next-gen high speed preview.',
     provider: 'google'
   },
   // OpenAI Models
