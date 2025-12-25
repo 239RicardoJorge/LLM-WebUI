@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, Key, Settings2, ChevronDown, ChevronRight, Zap, Box, ExternalLink, Save, CheckCircle2, Cpu, Activity } from 'lucide-react';
-import { AVAILABLE_MODELS, ApiKeys } from '../types';
+import { ApiKeys, ModelOption } from '../types';
+import { UnifiedService } from '../services/geminiService';
 
 
 interface SidebarProps {
@@ -11,12 +12,12 @@ interface SidebarProps {
   onClose: () => void;
   apiKeys: ApiKeys;
   onApiKeysChange: (keys: ApiKeys) => void;
+  availableModels: ModelOption[];
 }
 
 const PROVIDER_URLS = {
   google: 'https://aistudio.google.com/app/apikey',
-  openai: 'https://platform.openai.com/api-keys',
-  anthropic: 'https://console.anthropic.com/settings/keys'
+  openai: 'https://platform.openai.com/api-keys'
 };
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -26,7 +27,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onClose,
   apiKeys, // These are the SAVED keys from App
-  onApiKeysChange
+  onApiKeysChange,
+  availableModels
 }) => {
   // Simulated System Stats (Raspberry Pi 4-core simulation)
   const [cpuCores, setCpuCores] = useState<number[]>([12, 15, 8, 20]);
@@ -57,6 +59,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Local draft state for inputs. We don't push to App until user clicks Save.
   const [draftKeys, setDraftKeys] = useState<ApiKeys>(apiKeys);
   const [isSaved, setIsSaved] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Sync draft if parent updates (initial load)
   useEffect(() => {
@@ -66,22 +70,36 @@ const Sidebar: React.FC<SidebarProps> = ({
   const handleDraftChange = (provider: keyof ApiKeys, value: string) => {
     setDraftKeys(prev => ({ ...prev, [provider]: value }));
     setIsSaved(false);
+    setValidationError(null);
   };
 
-  const handleSaveKeys = () => {
-    onApiKeysChange(draftKeys);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2000);
+  const handleSaveKeys = async () => {
+    setIsValidating(true);
+    setValidationError(null);
+
+    try {
+      // Validate keys before saving
+      if (draftKeys.google) {
+        await UnifiedService.validateKeyAndGetModels('google', draftKeys.google);
+      }
+      if (draftKeys.openai) {
+        await UnifiedService.validateKeyAndGetModels('openai', draftKeys.openai);
+      }
+
+      onApiKeysChange(draftKeys);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2000);
+    } catch (error: any) {
+      setValidationError(error.message || "Validation Failed. Please check your keys.");
+      setIsSaved(false);
+    } finally {
+      setIsValidating(false);
+    }
   };
 
   // Strict filtering: Only show models if the corresponding API Key is SAVED (un parent prop)
   // Simple List: Just show the models defined in types.ts (User requested specific list)
-  const availableModels = AVAILABLE_MODELS.filter(model => {
-    if (model.provider === 'google' && apiKeys.google?.trim()) return true;
-    if (model.provider === 'openai' && apiKeys.openai?.trim()) return true;
-    if (model.provider === 'anthropic' && apiKeys.anthropic?.trim()) return true;
-    return false;
-  }).sort((a, b) => a.provider.localeCompare(b.provider));
+
 
   // Poll System Stats from Backend
   useEffect(() => {
@@ -175,44 +193,43 @@ const Sidebar: React.FC<SidebarProps> = ({
                     />
                   </div>
 
-                  {/* Anthropic Key */}
-                  <div className="group">
-                    <div className="flex justify-between items-center mb-1 pl-1">
-                      <label className="text-[9px] text-gray-500 uppercase tracking-wider">Anthropic</label>
-                      <a href={PROVIDER_URLS.anthropic} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[9px] text-orange-400 hover:text-orange-300 transition-colors">
-                        Get Key <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                    </div>
-                    <input
-                      type="password"
-                      value={draftKeys.anthropic}
-                      onChange={(e) => handleDraftChange('anthropic', e.target.value)}
-                      placeholder="sk-ant..."
-                      className="w-full bg-black/40 border border-white/10 text-white text-xs p-2.5 rounded-lg focus:outline-none focus:border-orange-500/50 transition-all font-mono"
-                    />
-                  </div>
-
                   {/* Save Button */}
-                  <button
-                    onClick={handleSaveKeys}
-                    className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all duration-300
-                                ${isSaved
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                        : 'bg-white/10 text-white hover:bg-white/20 border border-white/5'}
-                            `}
-                  >
-                    {isSaved ? (
-                      <>
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Saved & Verified</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-3.5 h-3.5" />
-                        <span>Save Configuration</span>
-                      </>
+                  <div className="space-y-2">
+                    {validationError && (
+                      <div className="text-[10px] text-red-400 bg-red-500/10 border border-red-500/20 p-2 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                        <span className="flex-1 font-medium">{validationError}</span>
+                      </div>
                     )}
-                  </button>
+                    <button
+                      onClick={handleSaveKeys}
+                      disabled={isValidating}
+                      className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all duration-300
+                                    ${isSaved
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                          : validationError
+                            ? 'bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20'
+                            : 'bg-white/10 text-white hover:bg-white/20 border border-white/5'}
+                            ${isValidating ? 'opacity-50 cursor-wait' : ''}
+                                `}
+                    >
+                      {isValidating ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Validating...</span>
+                        </>
+                      ) : isSaved ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Saved & Verified</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-3.5 h-3.5" />
+                          <span>{validationError ? 'Retry Save' : 'Save Configuration'}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -260,7 +277,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                               </span>
                               {model.provider === 'google' && <Zap className="w-3 h-3 text-blue-400" />}
                               {model.provider === 'openai' && <Box className="w-3 h-3 text-green-400" />}
-                              {model.provider === 'anthropic' && <Activity className="w-3 h-3 text-orange-400" />}
                             </div>
                             {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
                           </div>

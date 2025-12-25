@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import { UnifiedService } from './services/geminiService';
-import { ChatMessage, Role, AVAILABLE_MODELS, Attachment, ApiKeys } from './types';
+import { ChatMessage, Role, Attachment, ApiKeys, ModelOption } from './types';
 
 const App: React.FC = () => {
   // Initialize messages from localStorage to survive browser close
@@ -20,16 +20,49 @@ const App: React.FC = () => {
 
   // Initialize currentModel from localStorage
   const [currentModel, setCurrentModel] = useState(() => {
-    return localStorage.getItem('ccs_current_model') || AVAILABLE_MODELS[0].id;
+    return localStorage.getItem('ccs_current_model') || '';
   });
 
+  const [availableModels, setAvailableModels] = useState<ModelOption[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Initialize keys from localStorage
   const [apiKeys, setApiKeys] = useState<ApiKeys>(() => {
     const saved = localStorage.getItem('app_api_keys');
-    return saved ? JSON.parse(saved) : { google: '', openai: '', anthropic: '' };
+    return saved ? JSON.parse(saved) : { google: '', openai: '' };
   });
+
+  // Fetch models whenever API keys change
+  useEffect(() => {
+    const fetchModels = async () => {
+      let models: ModelOption[] = [];
+
+      // Fetch Google Models
+      if (apiKeys.google) {
+        try {
+          const googleModels = await UnifiedService.validateKeyAndGetModels('google', apiKeys.google);
+          models = [...models, ...googleModels];
+        } catch (e) { console.error("Google Validation Failed", e); }
+      }
+
+      // Fetch OpenAI Models
+      if (apiKeys.openai) {
+        try {
+          const openaiModels = await UnifiedService.validateKeyAndGetModels('openai', apiKeys.openai);
+          models = [...models, ...openaiModels];
+        } catch (e) { console.error("OpenAI Validation Failed", e); }
+      }
+
+      setAvailableModels(models);
+
+      // If current model is invalid or empty, switch to first available
+      if (models.length > 0 && (!currentModel || !models.find(m => m.id === currentModel))) {
+        setCurrentModel(models[0].id);
+      }
+    };
+    fetchModels();
+  }, [apiKeys]);
+
 
   // Persist messages to localStorage whenever they change
   useEffect(() => {
@@ -45,10 +78,12 @@ const App: React.FC = () => {
   const serviceRef = useRef<UnifiedService | null>(null);
 
   // Get current model definition
-  const activeModelDef = AVAILABLE_MODELS.find(m => m.id === currentModel) || AVAILABLE_MODELS[0];
+  const activeModelDef = availableModels.find(m => m.id === currentModel) || availableModels[0];
 
   // Initialize service on mount and when dependencies change
   useEffect(() => {
+    if (!activeModelDef) return;
+
     const activeKey = apiKeys[activeModelDef.provider];
 
     if (!serviceRef.current) {
@@ -61,17 +96,7 @@ const App: React.FC = () => {
   const handleApiKeysChange = (newKeys: ApiKeys) => {
     setApiKeys(newKeys);
     localStorage.setItem('app_api_keys', JSON.stringify(newKeys));
-
-    // Fallback Logic: If the current model's provider key was removed, switch to another available model
-    const currentProvider = activeModelDef.provider;
-    if (!newKeys[currentProvider]) {
-      const firstAvailable = AVAILABLE_MODELS.find(m => newKeys[m.provider]);
-      if (firstAvailable) {
-        setCurrentModel(firstAvailable.id);
-        setMessages([]); // Clear chat on forced switch
-      }
-      // If no keys left at all, we stay on current but Sidebar will show "No Models"
-    }
+    // Effect [apiKeys] will handle model fetching
   };
 
   const handleModelChange = (modelId: string) => {
@@ -172,6 +197,7 @@ const App: React.FC = () => {
         onClose={() => setSidebarOpen(false)}
         apiKeys={apiKeys}
         onApiKeysChange={handleApiKeysChange}
+        availableModels={availableModels}
       />
 
       <main className="flex-1 h-full relative z-0">

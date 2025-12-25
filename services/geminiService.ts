@@ -77,8 +77,6 @@ export class UnifiedService {
             yield* this.streamGoogle(message, attachment);
         } else if (this.currentProvider === 'openai') {
             yield* this.streamOpenAI(message, attachment);
-        } else if (this.currentProvider === 'anthropic') {
-            yield* this.streamAnthropic(message, attachment);
         } else {
             throw new Error("Provider not implemented");
         }
@@ -193,119 +191,93 @@ export class UnifiedService {
         }
     }
 
-    // --- Anthropic Implementation ---
-    private async *streamAnthropic(message: string, attachment?: Attachment) {
-        let contentPayload: any = message;
-
-        // Anthropic Image Handling
-        if (attachment && attachment.mimeType.startsWith('image/')) {
-            contentPayload = [
-                {
-                    type: "image",
-                    source: {
-                        type: "base64",
-                        media_type: attachment.mimeType,
-                        data: attachment.data
-                    }
-                },
-                { type: "text", text: message }
-            ];
-        }
-
-        const userMessage = { role: 'user', content: contentPayload };
-        this.messageHistory.push(userMessage);
-
-        // Anthropic Messages API
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'x-api-key': this.apiKey,
-                'anthropic-version': '2023-06-01',
-                'content-type': 'application/json',
-                // Note: Direct browser calls may fail CORS without a proxy. 
-                // In a real deployed environment, this is often routed through a backend.
-            },
-            body: JSON.stringify({
-                model: this.currentModel,
-                max_tokens: 4096,
-                messages: this.messageHistory,
-                stream: true
-            })
-        });
-
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.error?.message || "Anthropic API Error");
-        }
-
-        if (!response.body) throw new Error("No response body");
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let buffer = "";
-        let fullResponse = "";
+    // --- Dynamic Validation ---
+    public static async validateKeyAndGetModels(provider: Provider, apiKey: string): Promise<import("../types").ModelOption[]> {
+        if (!apiKey) return [];
 
         try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+            if (provider === 'google') {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey.trim()}`);
+                if (response.status === 400 || response.status === 403) throw new Error("Invalid API Key");
 
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split("\n");
-                buffer = lines.pop() || "";
+                const data = await response.json();
+                if (data.models && Array.isArray(data.models)) {
+                    return data.models
+                        .filter((m: any) => {
+                            const name = m.name.toLowerCase();
+                            const hasGenerateContent = m.supportedGenerationMethods?.includes("generateContent");
+                            const isNotGemma = !name.includes("gemma");
+                            const isNotTTS = !name.includes("tts");
+                            const isNotImage = !name.includes("image") && !name.includes("nano"); // Exclude "Nano Banana"
+                            const isNot2_0 = !name.includes("2.0");
+                            const isNotComputer = !name.includes("computer");
+                            const isNot2_5FlashPreview = !(name.includes("2.5") && name.includes("flash") && name.includes("preview"));
 
-                for (const line of lines) {
-                    const trimmed = line.trim();
-                    if (!trimmed || !trimmed.startsWith("event: ") && !trimmed.startsWith("data: ")) continue;
+                            // User-specific inclusions
+                            const isVersion001 = name.includes("001");
+                            const isVersion2_5 = name.includes("2.5");
+                            const isLatest = name.includes("latest");
+                            const isVersion3 = name.includes("3"); // Includes "gemini-3-..."
 
-                    // We specifically look for "data: " lines containing JSON
-                    if (trimmed.startsWith("data: ")) {
-                        const dataStr = trimmed.slice(6);
-                        if (dataStr === "[DONE]") continue;
+                            return hasGenerateContent && isNotGemma && isNotTTS && isNotImage && isNot2_0 && isNotComputer && isNot2_5FlashPreview && (isVersion001 || isVersion2_5 || isLatest || isVersion3);
+                        })
+                        .map((m: any) => ({
+                            id: m.name.replace('models/', ''),
+                            name: m.displayName || m.name.replace('models/', ''),
+                            description: m.description || "Google Gemini Model",
+                            provider: 'google',
+                            outputTokenLimit: m.outputTokenLimit
+                        }))
+                        .sort((a, b) => {
+                            const nameA = a.name.toLowerCase();
+                            const nameB = b.name.toLowerCase();
+                            const isLatestA = nameA.includes("latest");
+                            const isLatestB = nameB.includes("latest");
 
-                        try {
-                            const json = JSON.parse(dataStr);
-                            // Handle Content Block Delta
-                            if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') {
-                                const text = json.delta.text;
-                                if (text) {
-                                    fullResponse += text;
-                                    yield text;
-                                }
-                            }
-                        } catch (e) {
-                            // ignore parse errors for non-json lines
-                        }
-                    }
+                            if (isLatestA && !isLatestB) return -1;
+                            if (!isLatestA && isLatestB) return 1;
+
+                            return b.name.localeCompare(a.name); // Descending order
+                        });
                 }
             }
-        } finally {
-            this.messageHistory.push({ role: 'assistant', content: fullResponse });
-            reader.releaseLock();
-        }
-    }
+            else if (provider === 'openai') {
+                const response = await fetch('https://api.openai.com/v1/models', {
+                    headers: { 'Authorization': `Bearer ${apiKey.trim()}` }
+                });
 
-    // Static Helper to validate Key & Get Models
-    public static async getValidGoogleModels(apiKey: string): Promise<import("../types").ModelOption[]> {
-        if (!apiKey) return [];
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey.trim()}`);
-            if (!response.ok) return []; // Key invalid or other error
+                if (response.status === 401) throw new Error("Invalid API Key");
+                if (response.status === 429) throw new Error("Rate Limit Exceeded (Quota)");
 
-            const data = await response.json();
-            if (data.models && Array.isArray(data.models)) {
-                return data.models.filter((m: any) => m.supportedGenerationMethods?.includes("generateContent")).map((m: any) => ({
-                    id: m.name.replace('models/', ''),
-                    name: m.displayName || m.name.replace('models/', ''),
-                    description: m.description || "Google Gemini Model",
-                    provider: 'google',
-                    outputTokenLimit: m.outputTokenLimit
-                }));
+                const data = await response.json();
+                if (data.data && Array.isArray(data.data)) {
+                    return data.data
+                        .filter((m: any) => {
+                            const id = m.id.toLowerCase();
+                            // Inclusive: Must start with known text model prefixes
+                            const isTextModel = id.startsWith('gpt') || id.startsWith('o1') || id.startsWith('chatgpt');
+                            // Exclusive: Must NOT contain non-text/legacy keywords
+                            const isNotAudio = !id.includes('tts') && !id.includes('whisper') && !id.includes('audio');
+                            const isNotImage = !id.includes('dall-e');
+                            const isNotEmbedding = !id.includes('embedding');
+                            const isNotLegacy = !id.includes('davinci') && !id.includes('babbage') && !id.includes('curie') && !id.includes('ada');
+
+                            return isTextModel && isNotAudio && isNotImage && isNotEmbedding && isNotLegacy;
+                        })
+                        .map((m: any) => ({
+                            id: m.id,
+                            name: m.id, // OpenAI doesn't give display names
+                            description: "OpenAI Model",
+                            provider: 'openai'
+                        }))
+                        .sort((a: any, b: any) => b.id.localeCompare(a.id));
+                }
             }
-            return [];
-        } catch (e) {
-            console.warn("Failed to validate Google Key", e);
-            return [];
+        } catch (e: any) {
+            console.warn(`Validation failed for ${provider}:`, e);
+            // Re-throw if it's a known auth error so UI can show it
+            if (e.message === "Invalid API Key" || e.message.includes("Rate Limit")) throw e;
         }
+        return [];
     }
 }
