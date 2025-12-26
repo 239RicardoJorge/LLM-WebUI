@@ -40,10 +40,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [input]);
 
-  // Auto-focus on mount (desktop mainly)
-  useEffect(() => {
-    textareaRef.current?.focus();
-  }, []);
+  // Auto-focus removed to prevent mobile keyboard popping and layout shifts
+  // useEffect(() => {
+  //   textareaRef.current?.focus();
+  // }, []);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -61,7 +61,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       handleSubmit();
     }
   };
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -150,7 +149,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       </div>
                     )}
                     {msg.content && (
-                      <div className="bg-[#1A1A1A] border border-white/10 rounded-[2rem] px-8 py-5 text-[17px] text-white/90 leading-relaxed shadow-lg break-words break-all whitespace-pre-wrap">
+                      <div className="bg-[#1A1A1A] border border-white/10 rounded-[2rem] px-8 py-5 text-[17px] text-white/90 leading-relaxed shadow-lg break-words hyphens-auto whitespace-pre-wrap">
                         {msg.content}
                       </div>
                     )}
@@ -162,7 +161,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       <div className="h-[1px] w-8 bg-white"></div>
                       <span className="text-[10px] font-bold tracking-widest uppercase">Response</span>
                     </div>
-                    <div className="prose-container break-words break-all">
+                    <div className="prose-container break-words hyphens-auto">
                       <MarkdownRenderer content={msg.content} />
                     </div>
                   </div>
@@ -234,7 +233,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 rows={1}
                 className="w-full bg-transparent text-lg text-white placeholder-gray-600 px-2 py-4 focus:outline-none resize-none max-h-48"
                 disabled={isLoading}
-                autoFocus
               />
 
               <button
