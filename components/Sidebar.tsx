@@ -148,10 +148,10 @@ const Sidebar: React.FC<SidebarProps> = ({
         lg:static
       `}>
         {/* Glass Container */}
-        <div className="h-full flex flex-col lg:m-4 lg:rounded-3xl lg:glass-panel lg:border-white/5 overflow-hidden shadow-2xl relative">
+        <div className="h-full flex flex-col lg:m-4 lg:glass-panel lg:border-white/5 overflow-hidden shadow-2xl relative">
 
           {/* Top Control Area */}
-          <div className="p-6 space-y-8 flex-1 overflow-y-auto scrollbar-hide">
+          <div className="p-6 space-y-8 flex-1 overflow-y-auto [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-white/20">
 
             {/* API Keys Section */}
             <div className="space-y-3">

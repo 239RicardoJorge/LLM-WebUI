@@ -1,5 +1,6 @@
 import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 import { Attachment, Provider } from "../types";
+import { isGoogleModelAllowed, sortGoogleModels, isOpenAIModelAllowed } from "../config/modelRules";
 
 export class UnifiedService {
     private chatSession: Chat | null = null;
@@ -203,24 +204,7 @@ export class UnifiedService {
                 const data = await response.json();
                 if (data.models && Array.isArray(data.models)) {
                     return data.models
-                        .filter((m: any) => {
-                            const name = m.name.toLowerCase();
-                            const hasGenerateContent = m.supportedGenerationMethods?.includes("generateContent");
-                            const isNotGemma = !name.includes("gemma");
-                            const isNotTTS = !name.includes("tts");
-                            const isNotImage = !name.includes("image") && !name.includes("nano"); // Exclude "Nano Banana"
-                            const isNot2_0 = !name.includes("2.0");
-                            const isNotComputer = !name.includes("computer");
-                            const isNot2_5FlashPreview = !(name.includes("2.5") && name.includes("flash") && name.includes("preview"));
-
-                            // User-specific inclusions
-                            const isVersion001 = name.includes("001");
-                            const isVersion2_5 = name.includes("2.5");
-                            const isLatest = name.includes("latest");
-                            const isVersion3 = name.includes("3"); // Includes "gemini-3-..."
-
-                            return hasGenerateContent && isNotGemma && isNotTTS && isNotImage && isNot2_0 && isNotComputer && isNot2_5FlashPreview && (isVersion001 || isVersion2_5 || isLatest || isVersion3);
-                        })
+                        .filter(isGoogleModelAllowed)
                         .map((m: any) => ({
                             id: m.name.replace('models/', ''),
                             name: m.displayName || m.name.replace('models/', ''),
@@ -228,17 +212,7 @@ export class UnifiedService {
                             provider: 'google',
                             outputTokenLimit: m.outputTokenLimit
                         }))
-                        .sort((a, b) => {
-                            const nameA = a.name.toLowerCase();
-                            const nameB = b.name.toLowerCase();
-                            const isLatestA = nameA.includes("latest");
-                            const isLatestB = nameB.includes("latest");
-
-                            if (isLatestA && !isLatestB) return -1;
-                            if (!isLatestA && isLatestB) return 1;
-
-                            return b.name.localeCompare(a.name); // Descending order
-                        });
+                        .sort(sortGoogleModels);
                 }
             }
             else if (provider === 'openai') {
@@ -252,18 +226,7 @@ export class UnifiedService {
                 const data = await response.json();
                 if (data.data && Array.isArray(data.data)) {
                     return data.data
-                        .filter((m: any) => {
-                            const id = m.id.toLowerCase();
-                            // Inclusive: Must start with known text model prefixes
-                            const isTextModel = id.startsWith('gpt') || id.startsWith('o1') || id.startsWith('chatgpt');
-                            // Exclusive: Must NOT contain non-text/legacy keywords
-                            const isNotAudio = !id.includes('tts') && !id.includes('whisper') && !id.includes('audio');
-                            const isNotImage = !id.includes('dall-e');
-                            const isNotEmbedding = !id.includes('embedding');
-                            const isNotLegacy = !id.includes('davinci') && !id.includes('babbage') && !id.includes('curie') && !id.includes('ada');
-
-                            return isTextModel && isNotAudio && isNotImage && isNotEmbedding && isNotLegacy;
-                        })
+                        .filter(isOpenAIModelAllowed)
                         .map((m: any) => ({
                             id: m.id,
                             name: m.id, // OpenAI doesn't give display names
