@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Toaster, toast } from 'sonner';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import { UnifiedService } from './services/geminiService';
@@ -11,7 +12,7 @@ const App: React.FC = () => {
       const saved = localStorage.getItem('ccs_chat_messages');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
-      console.error("Failed to load chat history", e);
+      // invalid storage, clear it
       return [];
     }
   });
@@ -42,7 +43,9 @@ const App: React.FC = () => {
         try {
           const googleModels = await UnifiedService.validateKeyAndGetModels('google', apiKeys.google);
           models = [...models, ...googleModels];
-        } catch (e) { console.error("Google Validation Failed", e); }
+        } catch (e: any) {
+          toast.error(`Google API Error: ${e.message || 'Validation failed'}`);
+        }
       }
 
       // Fetch OpenAI Models
@@ -50,7 +53,9 @@ const App: React.FC = () => {
         try {
           const openaiModels = await UnifiedService.validateKeyAndGetModels('openai', apiKeys.openai);
           models = [...models, ...openaiModels];
-        } catch (e) { console.error("OpenAI Validation Failed", e); }
+        } catch (e: any) {
+          toast.error(`OpenAI API Error: ${e.message || 'Validation failed'}`);
+        }
       }
 
       setAvailableModels(models);
@@ -113,6 +118,7 @@ const App: React.FC = () => {
     if (serviceRef.current) {
       await serviceRef.current.resetSession();
     }
+    toast.success('Conversation cleared');
     setSidebarOpen(false);
   };
 
@@ -122,6 +128,7 @@ const App: React.FC = () => {
     // Check if key exists for current provider
     const currentProvider = activeModelDef.provider;
     if (!apiKeys[currentProvider]) {
+      toast.error('API Key Missing: Please update in sidebar');
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: Role.MODEL,
@@ -173,7 +180,9 @@ const App: React.FC = () => {
         ));
       }
     } catch (error: any) {
-      console.error("Chat error:", error);
+      console.error("Chat error:", error); // Keep for debug, but also toast
+      toast.error(`Error: ${error.message || 'Connection interrupted'}`);
+
       // If we failed before creating a message, create an error message now
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
@@ -189,6 +198,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-full relative overflow-hidden">
+      <Toaster position="top-right" theme="dark" richColors closeButton />
       <Sidebar
         currentModel={currentModel}
         onModelChange={handleModelChange}
@@ -212,5 +222,6 @@ const App: React.FC = () => {
     </div>
   );
 };
+
 
 export default App;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Trash2, Key, Settings2, ChevronDown, ChevronRight, Zap, Box, ExternalLink, Save, CheckCircle2, Cpu, Activity } from 'lucide-react';
 import { ApiKeys, ModelOption } from '../types';
 import { UnifiedService } from '../services/geminiService';
@@ -79,18 +80,24 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     try {
       // Validate keys before saving
+      let validCount = 0;
       if (draftKeys.google) {
         await UnifiedService.validateKeyAndGetModels('google', draftKeys.google);
+        validCount++;
       }
       if (draftKeys.openai) {
         await UnifiedService.validateKeyAndGetModels('openai', draftKeys.openai);
+        validCount++;
       }
 
       onApiKeysChange(draftKeys);
       setIsSaved(true);
+      toast.success(validCount > 0 ? "API Keys Verified & Saved" : "Configuration Saved");
       setTimeout(() => setIsSaved(false), 2000);
     } catch (error: any) {
-      setValidationError(error.message || "Validation Failed. Please check your keys.");
+      const msg = error.message || "Validation Failed. Please check your keys.";
+      setValidationError(msg);
+      toast.error(msg);
       setIsSaved(false);
     } finally {
       setIsValidating(false);
