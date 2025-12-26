@@ -6,6 +6,26 @@ import { UnifiedService } from './services/geminiService';
 import { ChatMessage, Role, Attachment, ApiKeys, ModelOption } from './types';
 
 const App: React.FC = () => {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Disable browser native scroll restoration globally
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+
+    // Force wrapper to top (it should be overflow-hidden anyway)
+    if (wrapperRef.current) {
+      wrapperRef.current.scrollTop = 0;
+    }
+
+    // Remove preload class to enable animations after initial paint
+    const timer = setTimeout(() => {
+      document.body.classList.remove('preload');
+    }, 500); // Increased to 500ms to ensure heavy hydration is complete before animating
+    return () => clearTimeout(timer);
+  }, []);
+
   // Initialize messages from localStorage to survive browser close
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
@@ -24,7 +44,10 @@ const App: React.FC = () => {
     return localStorage.getItem('ccs_current_model') || '';
   });
 
-  const [availableModels, setAvailableModels] = useState<ModelOption[]>([]);
+  const [availableModels, setAvailableModels] = useState<ModelOption[]>(() => {
+    const saved = localStorage.getItem('ccs_available_models');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Initialize keys from localStorage
@@ -59,6 +82,7 @@ const App: React.FC = () => {
       }
 
       setAvailableModels(models);
+      localStorage.setItem('ccs_available_models', JSON.stringify(models));
 
       // If current model is invalid or empty, switch to first available
       if (models.length > 0 && (!currentModel || !models.find(m => m.id === currentModel))) {
@@ -197,7 +221,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-full relative overflow-hidden">
+    <div ref={wrapperRef} className="flex h-screen w-full relative overflow-hidden">
       <Toaster position="top-right" theme="dark" richColors closeButton />
       <Sidebar
         currentModel={currentModel}

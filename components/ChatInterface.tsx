@@ -20,18 +20,53 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<Attachment | undefined>(undefined);
+  // Track initial message count to only animate NEW messages
+  const [initialMessageCount] = useState(messages.length);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollTimeout = useRef<NodeJS.Timeout>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const handleScroll = () => {
+    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+    scrollTimeout.current = setTimeout(() => {
+      if (scrollContainerRef.current) {
+        localStorage.setItem('ccs_chat_scroll_pos', String(scrollContainerRef.current.scrollTop));
+      }
+    }, 100);
   };
 
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  };
+
+  // Track previous message length to detect NEW messages
+  const prevMessagesLength = useRef(messages.length);
+
+  // 1. RESTORE SCROLL ON MOUNT (Run once)
+  React.useLayoutEffect(() => {
+    const savedScroll = localStorage.getItem('ccs_chat_scroll_pos');
+
+    if (savedScroll && scrollContainerRef.current) {
+      // If we have a saved position, restore it instantly
+      scrollContainerRef.current.scrollTop = Number(savedScroll);
+    } else {
+      // If no saved position (first load), start at the bottom
+      scrollToBottom('auto');
+    }
+  }, []); // Empty dependency array = Mount only
+
+  // 2. AUTO-SCROLL ON NEW MESSAGES (Run on updates)
   useEffect(() => {
-    scrollToBottom();
-  }, [messages.length, isLoading]);
+    // Only scroll if message count INCREASED (User sent or Bot responded)
+    // This prevents scrolling on initial load or simple re-renders
+    if (messages.length > prevMessagesLength.current) {
+      scrollToBottom('smooth');
+    }
+    prevMessagesLength.current = messages.length;
+  }, [messages.length]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -108,7 +143,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-0 scroll-smooth">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto px-4 md:px-0"
+      >
         <div className="max-w-3xl mx-auto pt-24 pb-48 min-h-full flex flex-col justify-center">
 
           {/* Hero / Empty State */}
@@ -125,10 +164,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
           {/* Conversation Feed */}
           <div className="space-y-12">
-            {messages.map((msg) => (
+            {messages.map((msg, idx) => (
               <div
                 key={msg.id}
-                className={`animate-fade-up group ${msg.role === Role.USER ? 'flex justify-end' : ''}`}
+                className={`group ${idx >= initialMessageCount ? 'animate-fade-up' : ''} ${msg.role === Role.USER ? 'flex justify-end' : ''}`}
               >
                 {/* User Message */}
                 {msg.role === Role.USER ? (

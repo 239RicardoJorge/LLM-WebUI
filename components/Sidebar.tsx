@@ -32,12 +32,22 @@ const Sidebar: React.FC<SidebarProps> = ({
   availableModels
 }) => {
   // Simulated System Stats (Raspberry Pi 4-core simulation)
-  const [cpuCores, setCpuCores] = useState<number[]>([12, 15, 8, 20]);
-  const [ramUsage, setRamUsage] = useState(45);
+  const [cpuCores, setCpuCores] = useState<number[]>(() => {
+    const saved = localStorage.getItem('ccs_stats_cpu');
+    return saved ? JSON.parse(saved) : [12, 15, 8, 20];
+  });
+  const [ramUsage, setRamUsage] = useState(() => {
+    const saved = localStorage.getItem('ccs_stats_ram');
+    return saved ? Number(saved) : 45;
+  });
   const [keysExpanded, setKeysExpanded] = useState(() => {
     const saved = localStorage.getItem('ccs_sidebar_keys_expanded');
     return saved !== null ? JSON.parse(saved) : true;
   });
+
+  // User Interaction flags to suppress animations on initial load
+  const [animateKeys, setAnimateKeys] = useState(false);
+  const [animateModels, setAnimateModels] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('ccs_sidebar_keys_expanded', JSON.stringify(keysExpanded));
@@ -117,9 +127,14 @@ const Sidebar: React.FC<SidebarProps> = ({
           const data = await res.json();
           // Ensure we have 4 cores for UI consistency (filling with avg if less, checking length if more)
           const coreData = data.cpu.cores.length > 0 ? data.cpu.cores : [data.cpu.avg, data.cpu.avg, data.cpu.avg, data.cpu.avg];
-          // Take first 4 cores or slice
-          setCpuCores(coreData.slice(0, 4));
+          const finalCores = coreData.slice(0, 4);
+
+          setCpuCores(finalCores);
           setRamUsage(data.memory.percentage);
+
+          // Persist latest stats
+          localStorage.setItem('ccs_stats_cpu', JSON.stringify(finalCores));
+          localStorage.setItem('ccs_stats_ram', String(data.memory.percentage));
         }
       } catch (err) {
         // Silent fail, keep previous or default
@@ -127,9 +142,35 @@ const Sidebar: React.FC<SidebarProps> = ({
       }
     };
 
-    fetchStats(); // Initial
     const interval = setInterval(fetchStats, 2000); // Poll every 2s
+    fetchStats(); // Initial
     return () => clearInterval(interval);
+  }, []);
+
+  // Mount check to suppress hydration animations
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Scroll Persistence for Sidebar
+  const sidebarScrollRef = React.useRef<HTMLDivElement>(null);
+  const scrollTimeout = React.useRef<NodeJS.Timeout>(null);
+
+  const handleSidebarScroll = () => {
+    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+    scrollTimeout.current = setTimeout(() => {
+      if (sidebarScrollRef.current) {
+        localStorage.setItem('ccs_sidebar_scroll_pos', String(sidebarScrollRef.current.scrollTop));
+      }
+    }, 100);
+  };
+
+  React.useLayoutEffect(() => {
+    const savedScroll = localStorage.getItem('ccs_sidebar_scroll_pos');
+    if (savedScroll && sidebarScrollRef.current) {
+      sidebarScrollRef.current.scrollTop = Number(savedScroll);
+    }
   }, []);
 
   return (
@@ -143,7 +184,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-[300px]
         flex flex-col bg-[#050505] lg:bg-transparent
-        transform transition-transform duration-500 cubic-bezier(0.19, 1, 0.22, 1)
+        transform ${mounted ? 'transition-transform duration-500 cubic-bezier(0.19, 1, 0.22, 1)' : ''}
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         lg:static
       `}>
@@ -151,12 +192,16 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div className="h-full flex flex-col lg:m-4 lg:glass-panel lg:border-white/5 overflow-hidden shadow-2xl relative">
 
           {/* Top Control Area */}
-          <div className="p-6 space-y-8 flex-1 overflow-y-auto [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-white/20">
+          <div
+            ref={sidebarScrollRef}
+            onScroll={handleSidebarScroll}
+            className="p-6 space-y-8 flex-1 overflow-y-auto [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-white/20"
+          >
 
             {/* API Keys Section */}
             <div className="space-y-3">
               <button
-                onClick={() => setKeysExpanded(!keysExpanded)}
+                onClick={() => { setAnimateKeys(true); setKeysExpanded(!keysExpanded); }}
                 className="flex items-center gap-2 text-white/40 mb-2 w-full hover:text-white/60 transition-colors"
               >
                 <Key className="w-3 h-3" />
@@ -165,7 +210,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               </button>
 
               {keysExpanded && (
-                <div className="space-y-4 animate-fade-up">
+                <div className={`space-y-4 ${animateKeys ? 'animate-fade-up' : ''}`}>
                   {/* Google Key */}
                   <div className="group">
                     <div className="flex justify-between items-center mb-1 pl-1">
@@ -244,7 +289,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             {/* Model Selection */}
             <div className="space-y-3">
               <button
-                onClick={() => setModelsExpanded(!modelsExpanded)}
+                onClick={() => { setAnimateModels(true); setModelsExpanded(!modelsExpanded); }}
                 className="flex items-center gap-2 text-white/40 mb-2 w-full hover:text-white/60 transition-colors"
               >
                 <Settings2 className="w-3 h-3" />
@@ -252,7 +297,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {modelsExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
               </button>
 
-              <div className="space-y-1">
+              <div
+                className={`space-y-1 ${modelsExpanded && animateModels ? 'animate-fade-up' : ''}`}
+                key={modelsExpanded ? 'expanded' : 'collapsed'}
+              >
                 {availableModels.length === 0 ? (
                   <div className="text-center py-6 px-4 border border-dashed border-white/10 rounded-xl bg-white/5">
                     <p className="text-xs text-gray-400 font-medium">No Models Available</p>
@@ -326,7 +374,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   {cpuCores.map((load, idx) => (
                     <div key={idx} className="relative bg-white/5 rounded-md overflow-hidden flex items-end group">
                       <div
-                        className="w-full bg-white/80 transition-all duration-1000 ease-out hover:bg-white"
+                        className={`w-full bg-white/80 ease-out hover:bg-white ${mounted ? 'transition-all duration-1000' : ''}`}
                         style={{ height: `${load}%` }}
                       />
                       {/* Tooltip for specific core */}
@@ -346,7 +394,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
                 <div className="h-1 w-full bg-blue-500/20 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-400 rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(96,165,250,0.3)]"
+                    className={`h-full bg-blue-400 rounded-full ease-out shadow-[0_0_10px_rgba(96,165,250,0.3)] ${mounted ? 'transition-all duration-1000' : ''}`}
                     style={{ width: `${ramUsage}%` }}
                   />
                 </div>
