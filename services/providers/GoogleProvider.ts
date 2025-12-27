@@ -104,29 +104,7 @@ export class GoogleProvider implements ILLMProvider {
         this.currentModel = null;
     }
 
-    async checkModelAvailability(modelId: string, apiKey: string): Promise<boolean> {
-        try {
-            this.initClient(apiKey);
-            if (!this.googleClient) return false;
 
-            // Ping with minimal request
-            await this.googleClient.models.generateContent({
-                model: modelId,
-                contents: [{ role: 'user', parts: [{ text: "ping" }] }],
-                config: {
-                    maxOutputTokens: 1,
-                }
-            });
-            return true;
-        } catch (e: any) {
-            // If it's a 429/429-like error, return false
-            if (e.message?.includes('429') || e.status === 429 || e.toString().includes('429')) {
-                return false;
-            }
-            // For other errors, assume potentially available or at least not strictly rate limited
-            // (e.g. Overloaded or internal error might be temporary but not "rate limit")
-            // But if we want to be safe, maybe we assume true unless we KNOW it's 429.
-            return true;
-        }
-    }
+
+
 }

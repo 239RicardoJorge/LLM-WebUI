@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowUp, Menu, Terminal, Paperclip, X, Square, AlertTriangle } from 'lucide-react';
+import { ArrowUp, Menu, Terminal, Paperclip, X, Square, AlertTriangle, ExternalLink } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import { ChatMessage, Role, Attachment } from '../types';
 
@@ -11,6 +11,7 @@ interface ChatInterfaceProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   unavailableCode?: string;
+  unavailableMessage?: string;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -20,7 +21,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onStop,
   sidebarOpen,
   setSidebarOpen,
-  unavailableCode
+  unavailableCode,
+  unavailableMessage
 }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<Attachment | undefined>(undefined);
@@ -184,6 +186,53 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                           'Connection Failed'}
                     </p>
                   </div>
+                  {unavailableMessage && (() => {
+                    // improved regex to exclude common trailing chars and delimiters
+                    const urlRegex = /(https?:\/\/[^\s"'()<>\[\]{}|\\^`]+)/g;
+                    const matches = unavailableMessage.match(urlRegex);
+
+                    if (matches) {
+                      // Multi-step cleaning to ensure robust deduplication
+                      const uniqueUrls = Array.from(new Set(
+                        matches.map(url => {
+                          let clean = url.trim();
+                          clean = clean.replace(/[.,;?!]+$/, ""); // Remove punctuation
+                          clean = clean.replace(/\/+$/, "");      // Remove trailing slashes
+                          return clean;
+                        })
+                      ));
+
+                      // Filter out any empty strings preventing empty buttons
+                      const validUrls = uniqueUrls.filter(u => u.length > 0);
+
+                      return (
+                        <div className="flex flex-wrap justify-center gap-3 mt-6">
+                          {validUrls.map((url, idx) => {
+                            let label = 'View Details';
+                            if (url.includes('docs') || url.includes('documentation')) {
+                              label = 'View Documentation';
+                            } else if (url.includes('rate-limit') || url.includes('quota') || url.includes('usage') || url.includes('billing')) {
+                              label = 'Manage Quota';
+                            }
+
+                            return (
+                              <a
+                                key={idx}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-4 py-2 rounded-full border border-white/10 bg-white/5 text-xs text-blue-400 hover:text-blue-300 hover:bg-white/10 transition-all flex items-center gap-2"
+                              >
+                                <span>{label}</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            );
+                          })}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               ) : (
                 <>

@@ -17,6 +17,7 @@ export interface ILLMProvider {
     // Optional: Reset session state (useful for stateful providers like Google)
     resetSession?(): Promise<void>;
 
-    // Check if a specific model is available (not rate limited)
-    checkModelAvailability?(modelId: string, apiKey: string): Promise<boolean>;
+
+
+
 }

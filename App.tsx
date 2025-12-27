@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import { UnifiedService } from './services/geminiService';
 import { ChatMessage, Role, Attachment, ApiKeys, ModelOption } from './types';
+import { APP_VERSION } from './config/version';
 
 const App: React.FC = () => {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -75,6 +76,8 @@ const App: React.FC = () => {
       if (models.length > 0 && (!currentModel || !models.find(m => m.id === currentModel))) {
         setCurrentModel(models[0].id);
       }
+
+
     };
     fetchModels();
   }, [apiKeys]);
@@ -103,9 +106,23 @@ const App: React.FC = () => {
     }
   });
 
+  // Store full error messages: { [modelId]: "Full error message with link..." }
+  const [unavailableModelErrors, setUnavailableModelErrors] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem('ccs_unavailable_model_errors');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+
   useEffect(() => {
     localStorage.setItem('ccs_unavailable_models', JSON.stringify(unavailableModels));
   }, [unavailableModels]);
+
+  useEffect(() => {
+    localStorage.setItem('ccs_unavailable_model_errors', JSON.stringify(unavailableModelErrors));
+  }, [unavailableModelErrors]);
 
   useEffect(() => {
     if (currentModel) {
@@ -114,49 +131,7 @@ const App: React.FC = () => {
     }
   }, [currentModel, availableModels]);
 
-  // Auto-check availability for unavailable models when models become available
-  useEffect(() => {
-    const checkRecovery = async () => {
-      const unavailableIds = Object.keys(unavailableModels);
-      if (unavailableIds.length === 0 || availableModels.length === 0) return;
 
-      const recovered: string[] = [];
-      const promises = unavailableIds.map(async (modelId) => {
-        const model = availableModels.find(m => m.id === modelId);
-        // If model not found in available list, remove it from list (cleanup)
-        if (!model) {
-          recovered.push(modelId);
-          return;
-        }
-
-        const apiKey = apiKeys[model.provider];
-        if (!apiKey) return;
-
-        try {
-          // Perform a lightweight check
-          const isAvailable = await UnifiedService.checkModelStatus(modelId, model.provider, apiKey);
-          if (isAvailable) {
-            recovered.push(modelId);
-          }
-        } catch (e) {
-          // Keep as unavailable on error
-        }
-      });
-
-      await Promise.all(promises);
-
-      if (recovered.length > 0) {
-        setUnavailableModels(prev => {
-          const next = { ...prev };
-          recovered.forEach(id => delete next[id]);
-          return next;
-        });
-        console.log("Models recovered/cleaned:", recovered);
-      }
-    };
-
-    checkRecovery();
-  }, [availableModels]); // Check when models are loaded or changed
 
   useEffect(() => {
     if (!activeModelDef) return;
@@ -255,6 +230,12 @@ const App: React.FC = () => {
           delete next[currentModel];
           return next;
         });
+        // Also clear specific error message
+        setUnavailableModelErrors(prev => {
+          const next = { ...prev };
+          delete next[currentModel];
+          return next;
+        });
       }
 
       const stream = serviceRef.current.sendMessageStream(content, attachment, controller.signal);
@@ -300,6 +281,10 @@ const App: React.FC = () => {
         ...prev,
         [currentModel]: errorCode
       }));
+      setUnavailableModelErrors(prev => ({
+        ...prev,
+        [currentModel]: errorMessage
+      }));
 
       // 3. Show specific toast tailored to the error type
       if (errorCode === "429") {
@@ -344,6 +329,10 @@ const App: React.FC = () => {
       />
 
       <main className="flex-1 h-full relative z-0">
+        {/* Version Display */}
+        <div className="absolute top-4 right-4 z-50 pointer-events-none opacity-30 select-none text-[10px] font-mono text-white">
+          {APP_VERSION}
+        </div>
         <ChatInterface
           messages={messages}
           isLoading={isLoading}
@@ -352,6 +341,7 @@ const App: React.FC = () => {
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
           unavailableCode={unavailableModels[currentModel]}
+          unavailableMessage={unavailableModelErrors[currentModel]}
         />
       </main>
     </div>

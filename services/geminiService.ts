@@ -76,19 +76,7 @@ export class UnifiedService {
         return await p.validateKey(apiKey);
     }
 
-    public static async checkModelStatus(modelId: string, provider: Provider, apiKey: string): Promise<boolean> {
-        let p: ILLMProvider;
-        if (provider === 'google') {
-            p = new GoogleProvider();
-        } else if (provider === 'openai') {
-            p = new OpenAIProvider();
-        } else {
-            return true;
-        }
 
-        if (p.checkModelAvailability) {
-            return await p.checkModelAvailability(modelId, apiKey);
-        }
-        return true;
-    }
+
+
 }
