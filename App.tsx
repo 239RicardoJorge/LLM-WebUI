@@ -91,7 +91,15 @@ const App: React.FC = () => {
 
   const serviceRef = useRef<UnifiedService | null>(null);
 
-  const activeModelDef = availableModels.find(m => m.id === currentModel) || availableModels[0];
+  const [activeModelDef, setActiveModelDef] = useState<ModelOption | undefined>(undefined);
+  const [rateLimitedModels, setRateLimitedModels] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (currentModel) {
+      const def = availableModels.find(m => m.id === currentModel) || availableModels[0];
+      setActiveModelDef(def);
+    }
+  }, [currentModel, availableModels]);
 
   useEffect(() => {
     if (!activeModelDef) return;
@@ -181,6 +189,17 @@ const App: React.FC = () => {
     try {
       let accumulatedText = '';
       let botMsgId: string | null = null;
+
+      // Auto-recover logic: If this model was rate limited but we are trying again,
+      // and we got this far (stream starting), clear the limit flag.
+      if (rateLimitedModels.has(currentModel)) {
+        setRateLimitedModels(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(currentModel);
+          return newSet;
+        });
+      }
+
       const stream = serviceRef.current.sendMessageStream(content, attachment, controller.signal);
 
       for await (const chunk of stream) {
@@ -204,14 +223,34 @@ const App: React.FC = () => {
         return; // Silent exit on abort
       }
       console.error("Chat error:", error);
-      toast.error(`Error: ${error.message || 'Connection interrupted'}`);
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: Role.MODEL,
-        content: `Error: ${error.message || "Connection Failed"}`,
-        timestamp: Date.now(),
-        isError: true
-      }]);
+
+      let errorMessage = error.message || 'Connection interrupted';
+
+      // Standardize Rate Limit Errors
+      if (
+        errorMessage.includes('429') ||
+        errorMessage.toLowerCase().includes('quota') ||
+        errorMessage.toLowerCase().includes('rate limit')
+      ) {
+        errorMessage = "Oops! Rate limit exceeded (429). Please try again later.";
+
+        // 1. Rollback: Remove the user message we just added
+        setMessages(prev => prev.filter(msg => msg.id !== newUserMsg.id));
+
+        // 2. Disable the model visually
+        setRateLimitedModels(prev => {
+          const newSet = new Set(prev);
+          newSet.add(currentModel);
+          return newSet;
+        });
+
+        toast.error(errorMessage);
+        return true; // Return TRUE to clear the input box (as requested)
+      }
+
+      toast.error(errorMessage);
+
+      // Removed setMessages for error bubble as per user request
     } finally {
       setIsLoading(false);
       abortControllerRef.current = null;
@@ -241,6 +280,7 @@ const App: React.FC = () => {
         onApiKeysChange={handleApiKeysChange}
         availableModels={availableModels}
         highlightKeys={highlightKeys}
+        rateLimitedModels={rateLimitedModels}
       />
 
       <main className="flex-1 h-full relative z-0">
@@ -251,6 +291,7 @@ const App: React.FC = () => {
           onStop={handleStopGeneration}
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
+          isRateLimited={rateLimitedModels.has(currentModel)}
         />
       </main>
     </div>

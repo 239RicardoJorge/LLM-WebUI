@@ -10,6 +10,7 @@ interface ChatInterfaceProps {
   onStop: () => void;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
+  isRateLimited?: boolean;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -18,7 +19,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSendMessage,
   onStop,
   sidebarOpen,
-  setSidebarOpen
+  setSidebarOpen,
+  isRateLimited = false
 }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<Attachment | undefined>(undefined);
@@ -165,7 +167,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div className="max-w-3xl mx-auto pt-24 pb-32 min-h-full flex flex-col justify-center">
 
           {/* Hero / Empty State */}
-          {messages.length === 0 && (
+          {messages.length === 0 && !isRateLimited && (
             <div className="flex flex-col items-center justify-center space-y-8 animate-fade-up opacity-60">
               <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl">
                 <Terminal className="w-8 h-8 text-white/40" />
