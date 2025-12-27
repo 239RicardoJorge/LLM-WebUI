@@ -15,9 +15,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     availableModels,
     unavailableModels,
 }) => {
-    const [viewMode, setViewMode] = useState<'collapsed' | 'available' | 'all'>(() => {
+    const [viewMode, setViewMode] = useState<'selected' | 'available' | 'all'>(() => {
         const saved = localStorage.getItem('ccs_sidebar_view_mode');
-        return (saved as 'collapsed' | 'available' | 'all') || 'available';
+        return (saved as 'selected' | 'available' | 'all') || 'available';
     });
 
     const [animateModels, setAnimateModels] = useState(false);
@@ -28,9 +28,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
 
     const cycleViewMode = () => {
         setAnimateModels(true);
-        if (viewMode === 'collapsed') setViewMode('available');
-        else if (viewMode === 'available') setViewMode('all');
-        else setViewMode('collapsed');
+        if (viewMode === 'available') setViewMode('selected');
+        else if (viewMode === 'selected') setViewMode('all');
+        else setViewMode('available');
     };
 
     return (
@@ -42,18 +42,18 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                 >
                     <Settings2 className="w-3 h-3" />
                     <span className="text-[10px] font-bold tracking-widest uppercase flex-1 text-left">
-                        {viewMode === 'all' ? 'ALL MODELS' : (viewMode === 'available' ? 'AVAILABLE MODELS' : 'MODEL')}
+                        {viewMode === 'all' ? 'ALL MODELS' : (viewMode === 'available' ? 'AVAILABLE MODELS' : 'SELECTED MODEL')}
                     </span>
 
                     {/* Icon Indication for Modes */}
                     <div className="flex items-center gap-1">
-                        {viewMode !== 'collapsed' ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                        {viewMode === 'available' || viewMode === 'all' ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                     </div>
                 </button>
             </div>
 
             <div
-                className={`space-y-1 ${viewMode !== 'collapsed' && animateModels ? 'animate-fade-up' : ''}`}
+                className={`space-y-1 ${viewMode !== 'selected' && animateModels ? 'animate-fade-up' : ''}`}
                 key={viewMode}
             >
                 {availableModels.length === 0 ? (
@@ -66,7 +66,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                 ) : (
                     availableModels
                         .filter(model => {
-                            if (viewMode === 'collapsed') return model.id === currentModel;
+                            if (viewMode === 'selected') return model.id === currentModel;
                             if (viewMode === 'available') return !unavailableModels[model.id];
                             return true; // 'all'
                         })
