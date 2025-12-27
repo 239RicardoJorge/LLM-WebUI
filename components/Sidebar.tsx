@@ -16,6 +16,7 @@ interface SidebarProps {
   unavailableModels?: Record<string, string>;
   onRefreshModels?: () => Promise<void>;
   isRefreshing?: boolean;
+  onSaveConfig?: (keys: { google?: string; openai?: string }) => Promise<void>;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -29,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   unavailableModels = {},
   onRefreshModels,
   isRefreshing = false,
+  onSaveConfig,
 }) => {
   // Mount check to suppress hydration animations
   const [mounted, setMounted] = useState(false);
@@ -62,6 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               highlightKeys={highlightKeys}
               onRefreshModels={onRefreshModels}
               isRefreshing={isRefreshing}
+              onSaveConfig={onSaveConfig}
             />
 
             <ModelSelector

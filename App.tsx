@@ -77,6 +77,7 @@ const App: React.FC = () => {
         unavailableModels={unavailableModels}
         onRefreshModels={() => refreshModels(true)}
         isRefreshing={isRefreshing}
+        onSaveConfig={(keys) => refreshModels(true, true, keys, true)}
       />
 
       <main className="flex-1 h-full relative z-0">

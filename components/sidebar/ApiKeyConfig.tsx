@@ -10,12 +10,14 @@ interface ApiKeyConfigProps {
     highlightKeys?: boolean;
     onRefreshModels?: () => Promise<void>;
     isRefreshing?: boolean;
+    onSaveConfig?: (keys: { google?: string; openai?: string }) => Promise<void>;
 }
 
 const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
     highlightKeys = false,
     onRefreshModels,
     isRefreshing = false,
+    onSaveConfig,
 }) => {
     const { apiKeys, setApiKeys } = useSettingsStore();
 
@@ -54,13 +56,9 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
     };
 
     const handleSaveKeys = async () => {
-        let loadingTimer: NodeJS.Timeout;
-
-        // Start timer to show loading state ONLY after 1s
-        loadingTimer = setTimeout(() => {
-            setIsSavingKeys(true);
-            setValidationError(null);
-        }, 1000);
+        // Show Validating immediately
+        setIsSavingKeys(true);
+        setValidationError(null);
 
         try {
             let validCount = 0;
@@ -78,16 +76,23 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
             // Update Global Store
             setApiKeys(draftKeys);
 
+            // Trigger full model refresh and WAIT for it to complete
+            if (onSaveConfig) {
+                await onSaveConfig(draftKeys);
+            }
+
+            // Only show success AFTER all models are verified
+            setIsSavingKeys(false);
             setIsSaved(true);
-            toast.success(validCount > 0 ? "API Keys Verified & Saved" : "Configuration Saved");
+            toast.success(validCount > 0 ? "API Keys Verified & Saved" : "Configuration Saved", { duration: 2000 });
+
+            // Reset to default state after 2 seconds
             setTimeout(() => setIsSaved(false), 2000);
         } catch (error: any) {
             const msg = error.message || "Validation Failed. Please check your keys.";
             setValidationError(msg);
-            toast.error(msg);
+            toast.error(msg, { duration: 2000 });
             setIsSaved(false);
-        } finally {
-            clearTimeout(loadingTimer!);
             setIsSavingKeys(false);
         }
     };

@@ -45,23 +45,39 @@ export const useModelManagement = () => {
         localStorage.setItem(APP_CONFIG.STORAGE_KEYS.UNAVAILABLE_MODEL_ERRORS, JSON.stringify(unavailableModelErrors));
     }, [unavailableModelErrors]);
 
-    // BATCH UPDATE LOGIC (Gradual Population)
-    const refreshModels = async (manual = false) => {
-        const googleKey = apiKeys.google?.trim();
-        const openaiKey = apiKeys.openai?.trim();
+    // BATCH UPDATE LOGIC (Gradual Population) & SMART TOASTS
+    // keys parameter allows passing fresh keys directly (avoids race condition after save)
+    // silent = true: no toasts, no spinner animation (used by Save Config)
+    const refreshModels = async (manual = false, full = false, keys?: { google?: string; openai?: string }, silent = false) => {
+        const googleKey = (keys?.google ?? apiKeys.google)?.trim() || '';
+        const openaiKey = (keys?.openai ?? apiKeys.openai)?.trim() || '';
 
         if (!googleKey && !openaiKey) {
+            // Clear ALL models when no keys
             setAvailableModels([]);
-            if (manual) {
-                toast.error("Please enter and save an API Key first.");
+            setUnavailableModels({});
+            setUnavailableModelErrors({});
+            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AVAILABLE_MODELS, JSON.stringify([]));
+            if (!silent) {
+                toast.error("Please enter and save an API Key first.", { duration: 2000 });
             }
             return;
         }
 
-        setIsRefreshing(true);
+        if (!silent) {
+            setIsRefreshing(true);
+        }
 
         try {
-            // 1. Fetch ALL models from providers (structure only)
+            // 1. Initial Snapshot
+            const prevUnavailable = unavailableModels;
+            const prevAvailableIds = new Set(
+                availableModels
+                    .filter(m => !prevUnavailable[m.id])
+                    .map(m => m.id)
+            );
+
+            // 2. Fetch Structure (Always fetch list to detect NEW models)
             const [googleModels, openaiModels] = await Promise.all([
                 googleKey ? UnifiedService.validateKeyAndGetModels('google', googleKey).catch(() => []) : Promise.resolve([]),
                 openaiKey ? UnifiedService.validateKeyAndGetModels('openai', openaiKey).catch(() => []) : Promise.resolve([])
@@ -69,19 +85,24 @@ export const useModelManagement = () => {
 
             const allModels = [...(googleModels as ModelOption[]), ...(openaiModels as ModelOption[])];
 
-            if (manual) toast.info(`Refreshing ${allModels.length} models...`);
+            // 3. Determine Verification Scope (Smart vs Full)
+            let modelsToVerify = allModels;
 
-            // 2. Set Available Models IMMEDIATELY (Gradual Population)
-            // Note: We do NOT auto-select here anymore, to avoid "selecting unavailability".
-            // We wait for verification to finish before auto-selecting.
-            setAvailableModels(allModels);
-            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AVAILABLE_MODELS, JSON.stringify(allModels));
+            if (!full) {
+                // Smart Refresh: Only verify if it was Unavailable previously OR it is a New model we haven't seen
+                // (If it was available, we assume it stays available to save time/quota)
+                modelsToVerify = allModels.filter(m => {
+                    const isPreviouslyUnavailable = !!prevUnavailable[m.id];
+                    const isNew = !prevAvailableIds.has(m.id);
+                    return isPreviouslyUnavailable || isNew;
+                });
+            }
 
-            // 3. Background Verification (Gradual - Updates as they fail)
-            const currentUnavailableModels: Record<string, string> = {};
-            const currentUnavailableErrors: Record<string, string> = {};
+            // 4. Background Verification
+            const currentUnavailableModels: Record<string, string> = { ...prevUnavailable }; // Start with previous
+            const currentUnavailableErrors: Record<string, string> = { ...unavailableModelErrors };
 
-            const verifyPromises = allModels.map(async (m) => {
+            const verifyPromises = modelsToVerify.map(async (m) => {
                 const key = m.provider === 'google' ? googleKey : openaiKey;
                 if (!key) return;
 
@@ -96,7 +117,10 @@ export const useModelManagement = () => {
                     setUnavailableModels(prev => ({ ...prev, [m.id]: finalCode }));
                     setUnavailableModelErrors(prev => ({ ...prev, [m.id]: result.error || 'Unknown Error' }));
                 } else {
-                    // Clear error immediately if valid
+                    // It is available. Remove from unavailable list.
+                    delete currentUnavailableModels[m.id];
+                    delete currentUnavailableErrors[m.id];
+
                     setUnavailableModels(prev => {
                         const next = { ...prev };
                         delete next[m.id];
@@ -112,24 +136,46 @@ export const useModelManagement = () => {
 
             await Promise.all(verifyPromises);
 
-            const availableCount = allModels.length - Object.keys(currentUnavailableModels).length;
+            // 5. Store ALL Models (let UI handle filtering by unavailableModels)
+            setAvailableModels(allModels);
+            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AVAILABLE_MODELS, JSON.stringify(allModels));
 
-            // Auto-Select Logic: Ensure we have a valid selected model
-            // This runs AFTER population/verification is complete.
-            const firstValid = allModels.find(m => !currentUnavailableModels[m.id]);
 
-            if (firstValid) {
-                // If no current selection, or currently selected is invalid (unavailable)
-                if (!currentModel || currentUnavailableModels[currentModel]) {
-                    setCurrentModel(firstValid.id);
+            // 6. Calculate Stats for Toasts
+            const actuallyAvailableModels = allModels.filter(m => !currentUnavailableModels[m.id]);
+            const newAvailableIds = actuallyAvailableModels.map(m => m.id);
+
+            // "Added" means it is now available but wasn't before
+            const addedModels = newAvailableIds.filter(id => !prevAvailableIds.has(id));
+            const availableCount = actuallyAvailableModels.length;
+
+
+            // 7. Toasts (skip if silent)
+            if (!silent) {
+                if (availableCount === 0) {
+                    if (manual) toast.error("No models available. Check API keys or Quota.", { duration: 2000 });
+                } else if (addedModels.length > 0) {
+                    // Models Added (Blue)
+                    toast.success(`${addedModels.length} new models online`, {
+                        className: 'text-blue-400 bg-black border border-blue-500/20',
+                        description: 'Your available model list has been updated.',
+                        duration: 2000
+                    });
+                } else {
+                    // Unchanged (Grey Text, Success Icon)
+                    toast.success("Model status unchanged", {
+                        className: "bg-black text-gray-400 border border-white/10",
+                        duration: 2000
+                    });
                 }
             }
 
-            if (manual) {
-                if (availableCount > 0) {
-                    toast.success(`Success: ${availableCount} models available.`);
-                } else {
-                    toast.error("No models available. Check API keys or Quota.");
+            // Auto-Select Logic
+            const firstValid = actuallyAvailableModels.find(m => !currentUnavailableModels[m.id]);
+
+            if (firstValid) {
+                if (!currentModel || currentUnavailableModels[currentModel]) {
+                    setCurrentModel(firstValid.id);
                 }
             }
 
@@ -141,11 +187,7 @@ export const useModelManagement = () => {
         }
     };
 
-    // Auto-refresh on key change
-    useEffect(() => {
-        refreshModels(false);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [apiKeys]);
+    // Auto-refresh DISABLED - Models only refresh on manual trigger or API key save
 
     return {
         currentModel,
