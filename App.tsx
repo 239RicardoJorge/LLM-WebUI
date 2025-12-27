@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
-import { ApiKeys } from './types';
 import { APP_VERSION } from './config/version';
 import { useModelManagement } from './hooks/useModelManagement';
 import { useChatSession } from './hooks/useChatSession';
@@ -26,16 +25,6 @@ const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [highlightKeys, setHighlightKeys] = useState(false);
 
-  const [apiKeys, setApiKeys] = useState<ApiKeys>(() => {
-    const saved = localStorage.getItem('app_api_keys');
-    return saved ? JSON.parse(saved) : { google: '', openai: '' };
-  });
-
-  const handleApiKeysChange = (newKeys: ApiKeys) => {
-    setApiKeys(newKeys);
-    localStorage.setItem('app_api_keys', JSON.stringify(newKeys));
-  };
-
   // 1. Model Management Hook
   const {
     currentModel,
@@ -46,7 +35,7 @@ const App: React.FC = () => {
     setUnavailableModels,
     setUnavailableModelErrors,
     handleManualRefresh
-  } = useModelManagement(apiKeys);
+  } = useModelManagement();
 
   // 2. Chat Session Hook
   const {
@@ -57,7 +46,6 @@ const App: React.FC = () => {
     handleStopGeneration,
     handleClearChat
   } = useChatSession({
-    apiKeys,
     currentModel,
     availableModels,
     unavailableModels,
@@ -83,8 +71,6 @@ const App: React.FC = () => {
         onClearChat={handleClearChat}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        apiKeys={apiKeys}
-        onApiKeysChange={handleApiKeysChange}
         availableModels={availableModels}
         highlightKeys={highlightKeys}
         unavailableModels={unavailableModels}

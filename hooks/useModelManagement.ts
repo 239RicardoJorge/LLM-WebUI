@@ -1,21 +1,25 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { ApiKeys, ModelOption } from '../types';
+import { ModelOption } from '../types';
 import { UnifiedService } from '../services/geminiService';
+import { useSettingsStore } from '../store/settingsStore';
+import { APP_CONFIG } from '../config/constants';
 
-export const useModelManagement = (apiKeys: ApiKeys) => {
+export const useModelManagement = () => {
+    const { apiKeys } = useSettingsStore();
+
     const [currentModel, setCurrentModel] = useState(() => {
-        return localStorage.getItem('ccs_current_model') || '';
+        return localStorage.getItem(APP_CONFIG.STORAGE_KEYS.CURRENT_MODEL) || '';
     });
 
     const [availableModels, setAvailableModels] = useState<ModelOption[]>(() => {
-        const saved = localStorage.getItem('ccs_available_models');
+        const saved = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.AVAILABLE_MODELS);
         return saved ? JSON.parse(saved) : [];
     });
 
     const [unavailableModels, setUnavailableModels] = useState<Record<string, string>>(() => {
         try {
-            const saved = localStorage.getItem('ccs_unavailable_models');
+            const saved = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.UNAVAILABLE_MODELS);
             return saved ? JSON.parse(saved) : {};
         } catch (e) {
             return {};
@@ -24,7 +28,7 @@ export const useModelManagement = (apiKeys: ApiKeys) => {
 
     const [unavailableModelErrors, setUnavailableModelErrors] = useState<Record<string, string>>(() => {
         try {
-            const saved = localStorage.getItem('ccs_unavailable_model_errors');
+            const saved = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.UNAVAILABLE_MODEL_ERRORS);
             return saved ? JSON.parse(saved) : {};
         } catch (e) {
             return {};
@@ -33,15 +37,15 @@ export const useModelManagement = (apiKeys: ApiKeys) => {
 
     // Persistence
     useEffect(() => {
-        localStorage.setItem('ccs_current_model', currentModel);
+        localStorage.setItem(APP_CONFIG.STORAGE_KEYS.CURRENT_MODEL, currentModel);
     }, [currentModel]);
 
     useEffect(() => {
-        localStorage.setItem('ccs_unavailable_models', JSON.stringify(unavailableModels));
+        localStorage.setItem(APP_CONFIG.STORAGE_KEYS.UNAVAILABLE_MODELS, JSON.stringify(unavailableModels));
     }, [unavailableModels]);
 
     useEffect(() => {
-        localStorage.setItem('ccs_unavailable_model_errors', JSON.stringify(unavailableModelErrors));
+        localStorage.setItem(APP_CONFIG.STORAGE_KEYS.UNAVAILABLE_MODEL_ERRORS, JSON.stringify(unavailableModelErrors));
     }, [unavailableModelErrors]);
 
     // Initial Fetch & Verification Queueing
@@ -70,7 +74,7 @@ export const useModelManagement = (apiKeys: ApiKeys) => {
             }
 
             setAvailableModels(models);
-            localStorage.setItem('ccs_available_models', JSON.stringify(models));
+            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AVAILABLE_MODELS, JSON.stringify(models));
 
             if (models.length > 0 && (!currentModel || !models.find(m => m.id === currentModel))) {
                 setCurrentModel(models[0].id);

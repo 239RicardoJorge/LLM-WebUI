@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { UnifiedService } from '../services/geminiService';
-import { ChatMessage, Role, Attachment, ApiKeys, ModelOption } from '../types';
+import { ChatMessage, Role, Attachment, ModelOption } from '../types';
+import { useSettingsStore } from '../store/settingsStore';
+import { APP_CONFIG } from '../config/constants';
 
 interface UseChatSessionProps {
-    apiKeys: ApiKeys;
     currentModel: string;
     availableModels: ModelOption[];
     unavailableModels: Record<string, string>;
@@ -15,7 +16,6 @@ interface UseChatSessionProps {
 }
 
 export const useChatSession = ({
-    apiKeys,
     currentModel,
     availableModels,
     unavailableModels,
@@ -24,10 +24,12 @@ export const useChatSession = ({
     setSidebarOpen,
     setHighlightKeys
 }: UseChatSessionProps) => {
+    const { apiKeys } = useSettingsStore();
+
 
     const [messages, setMessages] = useState<ChatMessage[]>(() => {
         try {
-            const saved = localStorage.getItem('ccs_chat_messages');
+            const saved = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.CHAT_MESSAGES);
             return saved ? JSON.parse(saved) : [];
         } catch (e) {
             return [];
@@ -40,7 +42,7 @@ export const useChatSession = ({
 
     // Persist messages
     useEffect(() => {
-        localStorage.setItem('ccs_chat_messages', JSON.stringify(messages));
+        localStorage.setItem(APP_CONFIG.STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(messages));
     }, [messages]);
 
     // Update Service Instance
@@ -59,7 +61,7 @@ export const useChatSession = ({
 
     const handleClearChat = async () => {
         setMessages([]);
-        localStorage.removeItem('ccs_chat_messages');
+        localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.CHAT_MESSAGES);
         if (serviceRef.current) {
             await serviceRef.current.resetSession();
         }

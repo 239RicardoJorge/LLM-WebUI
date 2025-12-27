@@ -3,25 +3,20 @@ import { Key, ChevronDown, ChevronRight, ExternalLink, RotateCw, CheckCircle2, S
 import { toast } from 'sonner';
 import { ApiKeys } from '../../types';
 import { UnifiedService } from '../../services/geminiService';
+import { useSettingsStore } from '../../store/settingsStore';
+import { APP_CONFIG } from '../../config/constants';
 
 interface ApiKeyConfigProps {
-    apiKeys: ApiKeys;
-    onApiKeysChange: (keys: ApiKeys) => void;
     highlightKeys?: boolean;
     onRefreshModels?: () => Promise<void>;
 }
 
-const PROVIDER_URLS = {
-    google: 'https://aistudio.google.com/app/apikey',
-    openai: 'https://platform.openai.com/api-keys'
-};
-
 const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
-    apiKeys,
-    onApiKeysChange,
     highlightKeys = false,
     onRefreshModels,
 }) => {
+    const { apiKeys, setApiKeys } = useSettingsStore();
+
     const [keysExpanded, setKeysExpanded] = useState(() => {
         const saved = localStorage.getItem('ccs_sidebar_keys_expanded');
         return saved !== null ? JSON.parse(saved) : true;
@@ -46,7 +41,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
         localStorage.setItem('ccs_sidebar_keys_expanded', JSON.stringify(keysExpanded));
     }, [keysExpanded]);
 
-    // Sync draft if parent updates
+    // Sync draft if global store updates (e.g. initial load)
     useEffect(() => {
         setDraftKeys(apiKeys);
     }, [apiKeys]);
@@ -77,7 +72,10 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
             }
 
             setValidationError(null);
-            onApiKeysChange(draftKeys);
+
+            // Update Global Store
+            setApiKeys(draftKeys);
+
             setIsSaved(true);
             toast.success(validCount > 0 ? "API Keys Verified & Saved" : "Configuration Saved");
             setTimeout(() => setIsSaved(false), 2000);
@@ -109,7 +107,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                     <div className="group">
                         <div className="flex justify-between items-center mb-1 pl-1">
                             <label className="text-[9px] text-gray-500 uppercase tracking-wider">Google Gemini</label>
-                            <a href={PROVIDER_URLS.google} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[9px] text-blue-400 hover:text-blue-300 transition-colors">
+                            <a href={APP_CONFIG.PROVIDER_URLS.google} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[9px] text-blue-400 hover:text-blue-300 transition-colors">
                                 Get Key <ExternalLink className="w-2.5 h-2.5" />
                             </a>
                         </div>
@@ -129,7 +127,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                     <div className="group">
                         <div className="flex justify-between items-center mb-1 pl-1">
                             <label className="text-[9px] text-gray-500 uppercase tracking-wider">OpenAI</label>
-                            <a href={PROVIDER_URLS.openai} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[9px] text-green-400 hover:text-green-300 transition-colors">
+                            <a href={APP_CONFIG.PROVIDER_URLS.openai} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[9px] text-green-400 hover:text-green-300 transition-colors">
                                 Get Key <ExternalLink className="w-2.5 h-2.5" />
                             </a>
                         </div>
