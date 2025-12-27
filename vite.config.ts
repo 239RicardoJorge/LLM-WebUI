@@ -9,6 +9,12 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 8090,
       host: '0.0.0.0',
+      allowedHosts: [
+        'pihole.bonobo-karat.ts.net',
+        'localhost',
+        '127.0.0.1',
+        '100.103.135.73'
+      ],
       proxy: {
         '/api': 'http://localhost:3001'
       }
