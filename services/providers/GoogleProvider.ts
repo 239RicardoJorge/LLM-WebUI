@@ -2,6 +2,8 @@ import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 import { Attachment, ModelOption } from "../../types"; // Adjusted path
 import { ILLMProvider } from "./types";
 import { isGoogleModelAllowed, sortGoogleModels } from "../../config/modelRules";
+import { GoogleModelListSchema } from "../schemas";
+
 
 export class GoogleProvider implements ILLMProvider {
     readonly id = 'google';
@@ -47,14 +49,22 @@ export class GoogleProvider implements ILLMProvider {
             if (response.status === 400 || response.status === 403) throw new Error("Invalid API Key");
 
             const data = await response.json();
-            if (data.models && Array.isArray(data.models)) {
-                return data.models
+
+            const parsed = GoogleModelListSchema.safeParse(data);
+            if (!parsed.success) {
+                console.warn("Google API Schema Validation Warning:", parsed.error);
+            }
+
+            const sourceData = parsed.success ? parsed.data : data;
+
+            if (sourceData.models && Array.isArray(sourceData.models)) {
+                return sourceData.models
                     .filter(isGoogleModelAllowed)
                     .map((m: any) => ({
                         id: m.name.replace('models/', ''),
                         name: m.displayName || m.name.replace('models/', ''),
                         description: m.description || "Google Gemini Model",
-                        provider: 'google',
+                        provider: 'google' as const,
                         outputTokenLimit: m.outputTokenLimit
                     }))
                     .sort(sortGoogleModels);

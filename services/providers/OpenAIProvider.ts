@@ -1,6 +1,7 @@
 import { Attachment, ModelOption } from "../../types";
 import { ILLMProvider } from "./types";
 import { isOpenAIModelAllowed } from "../../config/modelRules";
+import { OpenAIModelListSchema } from "../schemas";
 
 export class OpenAIProvider implements ILLMProvider {
     readonly id = 'openai';
@@ -18,14 +19,22 @@ export class OpenAIProvider implements ILLMProvider {
             if (response.status === 429) throw new Error("Rate Limit Exceeded (Quota)");
 
             const data = await response.json();
-            if (data.data && Array.isArray(data.data)) {
-                return data.data
+
+            const parsed = OpenAIModelListSchema.safeParse(data);
+            if (!parsed.success) {
+                console.warn("OpenAI API Schema Validation Warning:", parsed.error);
+            }
+
+            const sourceData = parsed.success ? parsed.data : data;
+
+            if (sourceData.data && Array.isArray(sourceData.data)) {
+                return sourceData.data
                     .filter(isOpenAIModelAllowed)
                     .map((m: any) => ({
                         id: m.id,
                         name: m.id, // OpenAI doesn't give display names
                         description: "OpenAI Model",
-                        provider: 'openai'
+                        provider: 'openai' as const
                     }))
                     .sort((a: any, b: any) => b.id.localeCompare(a.id));
             }

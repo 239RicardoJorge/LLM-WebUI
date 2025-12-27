@@ -3,7 +3,7 @@ import { Attachment, ModelOption } from "../../types";
 export interface ILLMProvider {
     readonly id: string;
 
-    validateKey(apiKey: string): Promise<boolean>;
+    validateKey(apiKey: string): Promise<ModelOption[]>;
     checkModelAvailability(modelId: string, apiKey: string): Promise<{ available: boolean; error?: string; errorCode?: string }>;
 
     sendMessageStream(
