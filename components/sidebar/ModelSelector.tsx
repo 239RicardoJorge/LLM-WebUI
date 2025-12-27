@@ -7,6 +7,7 @@ interface ModelSelectorProps {
     onModelChange: (modelId: string) => void;
     availableModels: ModelOption[];
     unavailableModels: Record<string, string>;
+    isRefreshing?: boolean;
 }
 
 const ModelSelector: React.FC<ModelSelectorProps> = ({
@@ -14,6 +15,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     onModelChange,
     availableModels,
     unavailableModels,
+    isRefreshing = false,
 }) => {
     const [viewMode, setViewMode] = useState<'selected' | 'available' | 'all'>(() => {
         const saved = localStorage.getItem('ccs_sidebar_view_mode');
@@ -41,7 +43,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                     className="flex items-center gap-2 text-white/40 hover:text-white/60 transition-colors flex-1 w-full"
                 >
                     <Settings2 className="w-3 h-3" />
-                    <span className="text-[10px] font-bold tracking-widest uppercase flex-1 text-left">
+                    <span className={`text-[10px] font-bold tracking-widest uppercase flex-1 text-left ${isRefreshing ? 'animate-pulse text-blue-400' : ''}`}>
                         {viewMode === 'all' ? 'ALL MODELS' : (viewMode === 'available' ? 'AVAILABLE MODELS' : 'SELECTED MODEL')}
                     </span>
 

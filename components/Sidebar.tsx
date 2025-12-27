@@ -15,6 +15,7 @@ interface SidebarProps {
   highlightKeys?: boolean;
   unavailableModels?: Record<string, string>;
   onRefreshModels?: () => Promise<void>;
+  isRefreshing?: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -27,6 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   highlightKeys = false,
   unavailableModels = {},
   onRefreshModels,
+  isRefreshing = false,
 }) => {
   // Mount check to suppress hydration animations
   const [mounted, setMounted] = useState(false);
@@ -58,6 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           >
             <ApiKeyConfig
               highlightKeys={highlightKeys}
+              onRefreshModels={onRefreshModels}
             />
 
             <ModelSelector
@@ -65,7 +68,9 @@ const Sidebar: React.FC<SidebarProps> = ({
               onModelChange={onModelChange}
               availableModels={availableModels}
               unavailableModels={unavailableModels}
+              isRefreshing={isRefreshing}
             />
+
           </div>
 
           {/* Fixed Clear Context Button */}

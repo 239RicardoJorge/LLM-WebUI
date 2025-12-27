@@ -34,7 +34,8 @@ const App: React.FC = () => {
     unavailableModelErrors,
     setUnavailableModels,
     setUnavailableModelErrors,
-    handleManualRefresh
+    refreshModels,
+    isRefreshing
   } = useModelManagement();
 
   // 2. Chat Session Hook
@@ -74,7 +75,8 @@ const App: React.FC = () => {
         availableModels={availableModels}
         highlightKeys={highlightKeys}
         unavailableModels={unavailableModels}
-        onRefreshModels={handleManualRefresh}
+        onRefreshModels={() => refreshModels(true)}
+        isRefreshing={isRefreshing}
       />
 
       <main className="flex-1 h-full relative z-0">

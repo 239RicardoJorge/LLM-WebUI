@@ -45,7 +45,7 @@ export const useModelManagement = () => {
         localStorage.setItem(APP_CONFIG.STORAGE_KEYS.UNAVAILABLE_MODEL_ERRORS, JSON.stringify(unavailableModelErrors));
     }, [unavailableModelErrors]);
 
-    // BATCH UPDATE LOGIC (Anti-Jitter)
+    // BATCH UPDATE LOGIC (Gradual Population)
     const refreshModels = async (manual = false) => {
         if (!apiKeys.google && !apiKeys.openai) {
             setAvailableModels([]);
@@ -64,49 +64,45 @@ export const useModelManagement = () => {
 
             const allModels = [...(googleModels as ModelOption[]), ...(openaiModels as ModelOption[])];
 
-            // 2. Verify Availability (Ping check)
-            const verifyPromises = allModels.map(async (m) => {
-                const key = m.provider === 'google' ? apiKeys.google : apiKeys.openai;
-                if (!key) return { id: m.id, available: false, error: 'No Key' };
-
-                const result = await UnifiedService.checkModelAvailability(m.provider, m.id, key);
-                return { id: m.id, ...result };
-            });
-
-            const results = await Promise.all(verifyPromises);
-
-            // 3. Prepare Batch State Updates
-            const newUnavailableModels: Record<string, string> = {};
-            const newUnavailableErrors: Record<string, string> = {};
-
-            results.forEach(r => {
-                if (!r.available) {
-                    const finalCode = r.errorCode === '429' ? '429' : '400';
-                    newUnavailableModels[r.id] = finalCode;
-                    newUnavailableErrors[r.id] = r.error || 'Unknown Error';
-                }
-            });
-
-            // 4. Update ALL State at once
+            // 2. Set Available Models IMMEDIATELY (Gradual Population)
             setAvailableModels(allModels);
             localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AVAILABLE_MODELS, JSON.stringify(allModels));
 
-            setUnavailableModels(newUnavailableModels);
-            setUnavailableModelErrors(newUnavailableErrors);
-
-            // 5. Auto-Select First Available Valid Model
-            const isCurrentValid = currentModel && allModels.find(m => m.id === currentModel) && !newUnavailableModels[currentModel];
-
-            if (!isCurrentValid && allModels.length > 0) {
-                // Find first model that is NOT in newUnavailableModels
-                const firstValid = allModels.find(m => !newUnavailableModels[m.id]);
-                if (firstValid) {
-                    setCurrentModel(firstValid.id);
-                } else {
-                    // Fallback to first even if error (user can see error)
-                    if (allModels[0]) setCurrentModel(allModels[0].id);
+            // Select first if needed
+            if (!currentModel && allModels.length > 0) {
+                if (!allModels.find(m => m.id === currentModel)) {
+                    setCurrentModel(allModels[0].id);
                 }
             }
+
+            // 3. Background Verification (Gradual - Updates as they fail)
+            // We await the array of promises to keep 'isRefreshing' true for UI feedback, but they run in parallel
+            const verifyPromises = allModels.map(async (m) => {
+                const key = m.provider === 'google' ? apiKeys.google : apiKeys.openai;
+                if (!key) return;
+
+                const result = await UnifiedService.checkModelAvailability(m.provider, m.id, key);
+
+                if (!result.available) {
+                    const finalCode = result.errorCode === '429' ? '429' : '400';
+                    setUnavailableModels(prev => ({ ...prev, [m.id]: finalCode }));
+                    setUnavailableModelErrors(prev => ({ ...prev, [m.id]: result.error || 'Unknown Error' }));
+                } else {
+                    // Clear error if it existed
+                    setUnavailableModels(prev => {
+                        const next = { ...prev };
+                        delete next[m.id];
+                        return next;
+                    });
+                    setUnavailableModelErrors(prev => {
+                        const next = { ...prev };
+                        delete next[m.id];
+                        return next;
+                    });
+                }
+            });
+
+            await Promise.all(verifyPromises);
 
             if (manual) toast.success(`Refreshed: ${allModels.length} models found.`);
 
@@ -118,7 +114,7 @@ export const useModelManagement = () => {
         }
     };
 
-    // Auto-refresh on key change (debounced or effect)
+    // Auto-refresh on key change
     useEffect(() => {
         refreshModels(false);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -130,7 +126,9 @@ export const useModelManagement = () => {
         availableModels,
         unavailableModels,
         unavailableModelErrors,
-        isRefreshing, // Exported for UI
-        refreshModels // Exported for Manual Button
+        setUnavailableModels,
+        setUnavailableModelErrors,
+        isRefreshing,
+        refreshModels
     };
 };

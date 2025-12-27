@@ -30,11 +30,11 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
 
     // Force expansion if highlighted
     useEffect(() => {
-        if (highlightKeys) {
+        if (highlightKeys && !keysExpanded) {
             setKeysExpanded(true);
             setAnimateKeys(true);
         }
-    }, [highlightKeys]);
+    }, [highlightKeys, keysExpanded]);
 
     // Persist expansion state
     useEffect(() => {
@@ -93,7 +93,10 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
     return (
         <div className="space-y-3">
             <button
-                onClick={() => { setAnimateKeys(true); setKeysExpanded(!keysExpanded); }}
+                onClick={() => {
+                    if (!keysExpanded) setAnimateKeys(true);
+                    setKeysExpanded(!keysExpanded);
+                }}
                 className="flex items-center gap-2 text-white/40 mb-2 w-full hover:text-white/60 transition-colors"
             >
                 <Key className="w-3 h-3" />
@@ -143,7 +146,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                         />
                     </div>
 
-                    {/* Save Button */}
+                    {/* Save Button & Refresh */}
                     <div className="space-y-2">
                         {validationError && (
                             <div className="text-[10px] text-red-400 bg-red-500/10 border border-red-500/20 p-2 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
@@ -151,27 +154,26 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                             </div>
                         )}
                         <div className="flex gap-2">
-                            {onRefreshModels && (
-                                <button
-                                    onClick={async (e) => {
-                                        e.stopPropagation();
-                                        setIsValidating(true);
-                                        await onRefreshModels();
-                                        setIsValidating(false);
-                                    }}
-                                    className={`
-                          flex items-center justify-center w-10 min-w-[2.5rem] rounded-lg border transition-all duration-300
-                          ${validationError
-                                            ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
-                                            : 'bg-white/10 text-white hover:bg-white/20 border-white/5'}
-                          ${isValidating ? 'opacity-50 cursor-wait' : ''}
-                      `}
-                                    title="Refresh Models"
-                                    disabled={isValidating}
-                                >
-                                    <RotateCw className={`w-4 h-4 ${isValidating ? 'animate-spin' : ''}`} />
-                                </button>
-                            )}
+                            {/* Manual Refresh Button */}
+                            <button
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    setIsValidating(true);
+                                    if (onRefreshModels) await onRefreshModels();
+                                    setIsValidating(false);
+                                }}
+                                className={`
+                        flex items-center justify-center w-10 min-w-[2.5rem] rounded-lg border transition-all duration-300
+                        ${validationError
+                                        ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
+                                        : 'bg-white/10 text-white hover:bg-white/20 border-white/5'}
+                        ${isValidating ? 'opacity-50 cursor-wait' : ''}
+                    `}
+                                title="Refresh Models"
+                                disabled={isValidating}
+                            >
+                                <RotateCw className={`w-4 h-4 ${isValidating ? 'animate-spin' : ''}`} />
+                            </button>
 
                             <button
                                 onClick={handleSaveKeys}
