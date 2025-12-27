@@ -9,11 +9,13 @@ import { APP_CONFIG } from '../../config/constants';
 interface ApiKeyConfigProps {
     highlightKeys?: boolean;
     onRefreshModels?: () => Promise<void>;
+    isRefreshing?: boolean;
 }
 
 const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
     highlightKeys = false,
     onRefreshModels,
+    isRefreshing = false,
 }) => {
     const { apiKeys, setApiKeys } = useSettingsStore();
 
@@ -26,7 +28,6 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
     const [draftKeys, setDraftKeys] = useState<ApiKeys>(apiKeys);
     const [isSaved, setIsSaved] = useState(false);
     const [isSavingKeys, setIsSavingKeys] = useState(false);
-    const [isRefreshingModels, setIsRefreshingModels] = useState(false);
     const [validationError, setValidationError] = useState<string | null>(null);
 
     // Force expansion if highlighted
@@ -159,21 +160,19 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                             <button
                                 onClick={async (e) => {
                                     e.stopPropagation();
-                                    setIsRefreshingModels(true);
                                     if (onRefreshModels) await onRefreshModels();
-                                    setIsRefreshingModels(false);
                                 }}
                                 className={`
                         flex items-center justify-center w-10 min-w-[2.5rem] rounded-lg border transition-all duration-300
                         ${validationError
                                         ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
                                         : 'bg-white/10 text-white hover:bg-white/20 border-white/5'}
-                        ${isRefreshingModels ? 'opacity-50 cursor-wait' : ''}
+                        ${isRefreshing ? 'opacity-50 cursor-wait' : ''}
                     `}
                                 title="Refresh Models"
-                                disabled={isRefreshingModels}
+                                disabled={isRefreshing}
                             >
-                                <RotateCw className={`w-4 h-4 ${isRefreshingModels ? 'animate-spin' : ''}`} />
+                                <RotateCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                             </button>
 
                             <button

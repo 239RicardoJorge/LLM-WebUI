@@ -60,6 +60,13 @@ export const useChatSession = ({
 
 
     const handleClearChat = async () => {
+        // Abort any ongoing generation
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+        setIsLoading(false);
+
         setMessages([]);
         localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.CHAT_MESSAGES);
         if (serviceRef.current) {

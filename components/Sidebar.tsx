@@ -61,6 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <ApiKeyConfig
               highlightKeys={highlightKeys}
               onRefreshModels={onRefreshModels}
+              isRefreshing={isRefreshing}
             />
 
             <ModelSelector
