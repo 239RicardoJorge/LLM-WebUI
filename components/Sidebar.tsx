@@ -14,6 +14,7 @@ interface SidebarProps {
   apiKeys: ApiKeys;
   onApiKeysChange: (keys: ApiKeys) => void;
   availableModels: ModelOption[];
+  highlightKeys?: boolean;
 }
 
 const PROVIDER_URLS = {
@@ -29,7 +30,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onClose,
   apiKeys, // These are the SAVED keys from App
   onApiKeysChange,
-  availableModels
+  availableModels,
+  highlightKeys = false,
 }) => {
   // Simulated System Stats (Raspberry Pi 4-core simulation)
   const [cpuCores, setCpuCores] = useState<number[]>(() => {
@@ -44,6 +46,13 @@ const Sidebar: React.FC<SidebarProps> = ({
     const saved = localStorage.getItem('ccs_sidebar_keys_expanded');
     return saved !== null ? JSON.parse(saved) : true;
   });
+
+  // Force expansion if highlighted
+  useEffect(() => {
+    if (highlightKeys) {
+      setKeysExpanded(true);
+    }
+  }, [highlightKeys]);
 
   // User Interaction flags to suppress animations on initial load
   const [animateKeys, setAnimateKeys] = useState(false);
@@ -81,15 +90,24 @@ const Sidebar: React.FC<SidebarProps> = ({
   const handleDraftChange = (provider: keyof ApiKeys, value: string) => {
     setDraftKeys(prev => ({ ...prev, [provider]: value }));
     setIsSaved(false);
-    setValidationError(null);
+    // setValidationError(null); // REMOVED: Keep error/retry state visible while user fixes the key
   };
 
   const handleSaveKeys = async () => {
-    setIsValidating(true);
-    setValidationError(null);
+    // Optimistic UI: Don't show "Validating" immediately.
+    // Only show it if the request takes longer than 1000ms.
+    // setValidationError(null); // REMOVED: Keep error visible during retry
+
+    let loadingTimer: NodeJS.Timeout;
+
+    // Start timer to show loading state ONLY after 1s
+    loadingTimer = setTimeout(() => {
+      setIsValidating(true);
+      // Only clear error if we enter the long-running validation state
+      setValidationError(null);
+    }, 1000);
 
     try {
-      // Validate keys before saving
       let validCount = 0;
       if (draftKeys.google) {
         await UnifiedService.validateKeyAndGetModels('google', draftKeys.google);
@@ -100,6 +118,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         validCount++;
       }
 
+      // Success! Now we clear the error.
+      setValidationError(null);
       onApiKeysChange(draftKeys);
       setIsSaved(true);
       toast.success(validCount > 0 ? "API Keys Verified & Saved" : "Configuration Saved");
@@ -110,6 +130,8 @@ const Sidebar: React.FC<SidebarProps> = ({
       toast.error(msg);
       setIsSaved(false);
     } finally {
+      // Clear the timer. If finished < 1s, isValidating never became true.
+      clearTimeout(loadingTimer!);
       setIsValidating(false);
     }
   };
@@ -153,26 +175,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     setMounted(true);
   }, []);
 
-  // Scroll Persistence for Sidebar
-  const sidebarScrollRef = React.useRef<HTMLDivElement>(null);
-  const scrollTimeout = React.useRef<NodeJS.Timeout>(null);
-
-  const handleSidebarScroll = () => {
-    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-    scrollTimeout.current = setTimeout(() => {
-      if (sidebarScrollRef.current) {
-        localStorage.setItem('ccs_sidebar_scroll_pos', String(sidebarScrollRef.current.scrollTop));
-      }
-    }, 100);
-  };
-
-  React.useLayoutEffect(() => {
-    const savedScroll = localStorage.getItem('ccs_sidebar_scroll_pos');
-    if (savedScroll && sidebarScrollRef.current) {
-      sidebarScrollRef.current.scrollTop = Number(savedScroll);
-    }
-  }, []);
-
   return (
     <>
       {/* Mobile Backdrop */}
@@ -193,8 +195,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Top Control Area */}
           <div
-            ref={sidebarScrollRef}
-            onScroll={handleSidebarScroll}
             className="p-6 space-y-8 flex-1 overflow-y-auto [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-white/20"
           >
 
@@ -223,8 +223,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                       type="password"
                       value={draftKeys.google}
                       onChange={(e) => handleDraftChange('google', e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSaveKeys()}
                       placeholder="AIzaSy..."
-                      className="w-full bg-black/40 border border-white/10 text-white text-xs p-2.5 rounded-lg focus:outline-none focus:border-blue-500/50 transition-all font-mono"
+                      className={`w-full bg-black/40 border text-white text-xs p-2.5 rounded-lg focus:outline-none focus:border-blue-500/50 transition-all font-mono
+                         ${highlightKeys && !draftKeys.google ? 'animate-blink-2' : 'border-white/10'}
+                      `}
                     />
                   </div>
 
@@ -240,8 +243,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                       type="password"
                       value={draftKeys.openai}
                       onChange={(e) => handleDraftChange('openai', e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSaveKeys()}
                       placeholder="sk-..."
-                      className="w-full bg-black/40 border border-white/10 text-white text-xs p-2.5 rounded-lg focus:outline-none focus:border-green-500/50 transition-all font-mono"
+                      className={`w-full bg-black/40 border text-white text-xs p-2.5 rounded-lg focus:outline-none focus:border-green-500/50 transition-all font-mono
+                         ${highlightKeys && !draftKeys.openai ? 'animate-blink-2' : 'border-white/10'}
+                       `}
                     />
                   </div>
 
@@ -255,7 +261,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       onClick={handleSaveKeys}
                       disabled={isValidating}
-                      className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all duration-300
+                      className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all
+                                    ${validationError ? 'duration-0' : 'duration-300'}
                                     ${isSaved
                           ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                           : validationError

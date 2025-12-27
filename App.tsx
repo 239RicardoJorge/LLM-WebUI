@@ -9,37 +9,29 @@ const App: React.FC = () => {
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Disable browser native scroll restoration globally
     if ('scrollRestoration' in history) {
       history.scrollRestoration = 'manual';
     }
-
-    // Force wrapper to top (it should be overflow-hidden anyway)
     if (wrapperRef.current) {
       wrapperRef.current.scrollTop = 0;
     }
-
-    // Remove preload class to enable animations after initial paint
     const timer = setTimeout(() => {
       document.body.classList.remove('preload');
-    }, 500); // Increased to 500ms to ensure heavy hydration is complete before animating
+    }, 500);
     return () => clearTimeout(timer);
   }, []);
 
-  // Initialize messages from localStorage to survive browser close
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
       const saved = localStorage.getItem('ccs_chat_messages');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
-      // invalid storage, clear it
       return [];
     }
   });
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // Initialize currentModel from localStorage
   const [currentModel, setCurrentModel] = useState(() => {
     return localStorage.getItem('ccs_current_model') || '';
   });
@@ -48,20 +40,18 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('ccs_available_models');
     return saved ? JSON.parse(saved) : [];
   });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Initialize keys from localStorage
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [highlightKeys, setHighlightKeys] = useState(false);
+
   const [apiKeys, setApiKeys] = useState<ApiKeys>(() => {
     const saved = localStorage.getItem('app_api_keys');
     return saved ? JSON.parse(saved) : { google: '', openai: '' };
   });
 
-  // Fetch models whenever API keys change
   useEffect(() => {
     const fetchModels = async () => {
       let models: ModelOption[] = [];
-
-      // Fetch Google Models
       if (apiKeys.google) {
         try {
           const googleModels = await UnifiedService.validateKeyAndGetModels('google', apiKeys.google);
@@ -70,8 +60,6 @@ const App: React.FC = () => {
           toast.error(`Google API Error: ${e.message || 'Validation failed'}`);
         }
       }
-
-      // Fetch OpenAI Models
       if (apiKeys.openai) {
         try {
           const openaiModels = await UnifiedService.validateKeyAndGetModels('openai', apiKeys.openai);
@@ -80,11 +68,8 @@ const App: React.FC = () => {
           toast.error(`OpenAI API Error: ${e.message || 'Validation failed'}`);
         }
       }
-
       setAvailableModels(models);
       localStorage.setItem('ccs_available_models', JSON.stringify(models));
-
-      // If current model is invalid or empty, switch to first available
       if (models.length > 0 && (!currentModel || !models.find(m => m.id === currentModel))) {
         setCurrentModel(models[0].id);
       }
@@ -93,12 +78,10 @@ const App: React.FC = () => {
   }, [apiKeys]);
 
 
-  // Persist messages to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('ccs_chat_messages', JSON.stringify(messages));
   }, [messages]);
 
-  // Persist currentModel to localStorage
   useEffect(() => {
     localStorage.setItem('ccs_current_model', currentModel);
   }, [currentModel]);
@@ -106,15 +89,11 @@ const App: React.FC = () => {
 
   const serviceRef = useRef<UnifiedService | null>(null);
 
-  // Get current model definition
   const activeModelDef = availableModels.find(m => m.id === currentModel) || availableModels[0];
 
-  // Initialize service on mount and when dependencies change
   useEffect(() => {
     if (!activeModelDef) return;
-
     const activeKey = apiKeys[activeModelDef.provider];
-
     if (!serviceRef.current) {
       serviceRef.current = new UnifiedService(currentModel, activeModelDef.provider, activeKey);
     } else {
@@ -125,14 +104,11 @@ const App: React.FC = () => {
   const handleApiKeysChange = (newKeys: ApiKeys) => {
     setApiKeys(newKeys);
     localStorage.setItem('app_api_keys', JSON.stringify(newKeys));
-    // Effect [apiKeys] will handle model fetching
   };
 
   const handleModelChange = (modelId: string) => {
     setCurrentModel(modelId);
     setSidebarOpen(false);
-    // Service update is handled by useEffect
-    // We clear messages on model switch for clean context (optional but safer for multi-provider)
     setMessages([]);
   };
 
@@ -147,20 +123,38 @@ const App: React.FC = () => {
   };
 
   const handleSendMessage = async (content: string, attachment?: Attachment) => {
-    if ((!content.trim() && !attachment) || !serviceRef.current) return;
+    // 1. Basic Content Check
+    if (!content.trim() && !attachment) return;
 
-    // Check if key exists for current provider
-    const currentProvider = activeModelDef.provider;
-    if (!apiKeys[currentProvider]) {
-      toast.error('API Key Missing: Please update in sidebar');
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        role: Role.MODEL,
-        content: `Please enter and save your API Key in the sidebar to use this model.`,
-        timestamp: Date.now(),
-        isError: true
-      }]);
+    // 2. Generic API Key Check
+    // Check if user has AT LEAST one key saved
+    const hasAnyKey = !!apiKeys.google || !!apiKeys.openai;
+
+    if (!hasAnyKey) {
+      toast.error("Please connect an API Key to start chatting");
+
       setSidebarOpen(true);
+      setHighlightKeys(true);
+      setTimeout(() => setHighlightKeys(false), 3800); // 1.8s * 2 = 3.6s + buffer
+      return;
+    }
+
+    // 3. Provider Specific Check (only if specific model is active)
+    const currentProvider = activeModelDef?.provider || 'google';
+
+    if (!apiKeys[currentProvider]) {
+      toast.error(`Missing API Key for ${currentProvider.toUpperCase()}`);
+
+      setSidebarOpen(true);
+      setHighlightKeys(true);
+      setTimeout(() => setHighlightKeys(false), 3800);
+      return;
+    }
+
+    // 4. Service Availability Check
+    if (!serviceRef.current) {
+      console.error("DEBUG: Service not initialized");
+      toast.error("Critical Error: Service not initialized. Refresh page.");
       return;
     }
 
@@ -175,17 +169,12 @@ const App: React.FC = () => {
     setMessages(prev => [...prev, newUserMsg]);
     setIsLoading(true);
 
-    // Note: We do NOT create the empty bot message here.
-    // We wait for the first chunk to ensure "Thinking" -> "Response" transition.
-
     try {
       let accumulatedText = '';
       let botMsgId: string | null = null;
-
       const stream = serviceRef.current.sendMessageStream(content, attachment);
 
       for await (const chunk of stream) {
-        // Create the message on the first chunk
         if (!botMsgId) {
           botMsgId = (Date.now() + 1).toString();
           setMessages(prev => [...prev, {
@@ -195,19 +184,14 @@ const App: React.FC = () => {
             timestamp: Date.now()
           }]);
         }
-
         accumulatedText += chunk;
         setMessages(prev => prev.map(msg =>
-          msg.id === botMsgId
-            ? { ...msg, content: accumulatedText }
-            : msg
+          msg.id === botMsgId ? { ...msg, content: accumulatedText } : msg
         ));
       }
     } catch (error: any) {
-      console.error("Chat error:", error); // Keep for debug, but also toast
+      console.error("Chat error:", error);
       toast.error(`Error: ${error.message || 'Connection interrupted'}`);
-
-      // If we failed before creating a message, create an error message now
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: Role.MODEL,
@@ -232,6 +216,7 @@ const App: React.FC = () => {
         apiKeys={apiKeys}
         onApiKeysChange={handleApiKeysChange}
         availableModels={availableModels}
+        highlightKeys={highlightKeys}
       />
 
       <main className="flex-1 h-full relative z-0">
@@ -246,6 +231,5 @@ const App: React.FC = () => {
     </div>
   );
 };
-
 
 export default App;

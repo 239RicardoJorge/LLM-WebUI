@@ -44,25 +44,31 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Track previous message length to detect NEW messages
   const prevMessagesLength = useRef(messages.length);
+  const isHypdrating = useRef(true);
 
-  // 1. RESTORE SCROLL ON MOUNT (Run once)
+  // 1. RESTORE SCROLL ON CONTENT UPDATE
+  // We monitor messages.length because the container height depends on it.
   React.useLayoutEffect(() => {
-    const savedScroll = localStorage.getItem('ccs_chat_scroll_pos');
+    // Only attempt to restore if we are hydrating (initial load of messages)
+    if (isHypdrating.current && messages.length > 0) {
+      const savedScroll = localStorage.getItem('ccs_chat_scroll_pos');
 
-    if (savedScroll && scrollContainerRef.current) {
-      // If we have a saved position, restore it instantly
-      scrollContainerRef.current.scrollTop = Number(savedScroll);
-    } else {
-      // If no saved position (first load), start at the bottom
-      scrollToBottom('auto');
+      if (savedScroll && scrollContainerRef.current) {
+        // If we have a saved position, restore it
+        scrollContainerRef.current.scrollTop = Number(savedScroll);
+        isHypdrating.current = false; // Hydration done
+      } else if (scrollContainerRef.current) {
+        // No saved position, default to bottom
+        scrollToBottom('auto');
+        isHypdrating.current = false;
+      }
     }
-  }, []); // Empty dependency array = Mount only
+  }, [messages.length]);
 
-  // 2. AUTO-SCROLL ON NEW MESSAGES (Run on updates)
+  // 2. AUTO-SCROLL ON NEW MESSAGES (Live interactions)
   useEffect(() => {
-    // Only scroll if message count INCREASED (User sent or Bot responded)
-    // This prevents scrolling on initial load or simple re-renders
-    if (messages.length > prevMessagesLength.current) {
+    // Only scroll if message count INCREASED AND we are not hydrating
+    if (!isHypdrating.current && messages.length > prevMessagesLength.current) {
       scrollToBottom('smooth');
     }
     prevMessagesLength.current = messages.length;
@@ -82,8 +88,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if ((!input.trim() && !attachment) || isLoading) return;
+    console.log("ChatInterface: handleSubmit called", { input, attachment, isLoading });
 
+    if ((!input.trim() && !attachment) || isLoading) {
+      console.warn("ChatInterface: Submission blocked", { inputEmpty: !input.trim(), attachmentMissing: !attachment, isLoading });
+      return;
+    }
+
+    console.log("ChatInterface: Calling onSendMessage");
     onSendMessage(input, attachment);
     setInput('');
     setAttachment(undefined);
@@ -144,8 +156,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Main Content Area */}
       <div
-        ref={scrollContainerRef}
-        onScroll={handleScroll}
         className="flex-1 overflow-y-auto px-4 md:px-0"
       >
         <div className="max-w-3xl mx-auto pt-24 pb-48 min-h-full flex flex-col justify-center">

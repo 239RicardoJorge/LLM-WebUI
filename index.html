@@ -87,6 +87,24 @@
       -o-animation: none !important;
       animation: none !important;
     }
+
+    @keyframes blink-border {
+
+      0%,
+      100% {
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: none;
+      }
+
+      50% {
+        border-color: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+      }
+    }
+
+    .animate-blink-2 {
+      animation: blink-border 1.8s ease-in-out 2 forwards;
+    }
   </style>
   <script type="importmap">
 {
