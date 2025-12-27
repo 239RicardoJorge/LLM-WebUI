@@ -76,6 +76,19 @@ export class UnifiedService {
         return await p.validateKey(apiKey);
     }
 
+    public static async checkModelAvailability(provider: string, modelId: string, apiKey: string) {
+        // Instantiate specific provider
+        let p: ILLMProvider;
+        if (provider === 'google') {
+            p = new GoogleProvider();
+        } else if (provider === 'openai') {
+            p = new OpenAIProvider();
+        } else {
+            throw new Error(`Provider ${provider} not found`);
+        }
+        return p.checkModelAvailability(modelId, apiKey);
+    }
+
 
 
 

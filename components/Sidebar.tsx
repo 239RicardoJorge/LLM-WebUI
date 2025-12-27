@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Trash2, Key, Settings2, ChevronDown, ChevronRight, Zap, Box, ExternalLink, Save, CheckCircle2, Cpu, Activity } from 'lucide-react';
+import { Trash2, Key, Settings2, ChevronDown, ChevronRight, Zap, Box, ExternalLink, Save, CheckCircle2, Cpu, Activity, RotateCw } from 'lucide-react';
 import { ApiKeys, ModelOption } from '../types';
 import { UnifiedService } from '../services/geminiService';
 
@@ -16,6 +16,7 @@ interface SidebarProps {
   availableModels: ModelOption[];
   highlightKeys?: boolean;
   unavailableModels?: Record<string, string>;
+  onRefreshModels?: () => Promise<void>;
 }
 
 const PROVIDER_URLS = {
@@ -34,6 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   availableModels,
   highlightKeys = false,
   unavailableModels = {},
+  onRefreshModels,
 }) => {
   // Simulated System Stats (Raspberry Pi 4-core simulation)
   const [cpuCores, setCpuCores] = useState<number[]>(() => {
@@ -260,36 +262,60 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <span className="flex-1 font-medium">{validationError}</span>
                       </div>
                     )}
-                    <button
-                      onClick={handleSaveKeys}
-                      disabled={isValidating}
-                      className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all
-                                    ${validationError ? 'duration-0' : 'duration-300'}
-                                    ${isSaved
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                          : validationError
-                            ? 'bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20'
-                            : 'bg-white/10 text-white hover:bg-white/20 border border-white/5'}
-                            ${isValidating ? 'opacity-50 cursor-wait' : ''}
-                                `}
-                    >
-                      {isValidating ? (
-                        <>
-                          <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>Validating...</span>
-                        </>
-                      ) : isSaved ? (
-                        <>
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Saved & Verified</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-3.5 h-3.5" />
-                          <span>{validationError ? 'Retry Save' : 'Save Configuration'}</span>
-                        </>
+                    <div className="flex gap-2">
+                      {onRefreshModels && (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            setIsValidating(true);
+                            await onRefreshModels();
+                            setIsValidating(false);
+                          }}
+                          className={`
+                                  flex items-center justify-center w-10 min-w-[2.5rem] rounded-lg border transition-all duration-300
+                                  ${validationError
+                              ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
+                              : 'bg-white/10 text-white hover:bg-white/20 border-white/5'}
+                                  ${isValidating ? 'opacity-50 cursor-wait' : ''}
+                              `}
+                          title="Refresh Models"
+                          disabled={isValidating}
+                        >
+                          <RotateCw className={`w-4 h-4 ${isValidating ? 'animate-spin' : ''}`} />
+                        </button>
                       )}
-                    </button>
+
+                      <button
+                        onClick={handleSaveKeys}
+                        disabled={isValidating}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all
+                                        ${validationError ? 'duration-0' : 'duration-300'}
+                                        ${isSaved
+                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                            : validationError
+                              ? 'bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20'
+                              : 'bg-white/10 text-white hover:bg-white/20 border border-white/5'}
+                                ${isValidating ? 'opacity-50 cursor-wait' : ''}
+                                    `}
+                      >
+                        {isValidating ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <span>Validating...</span>
+                          </>
+                        ) : isSaved ? (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Saved & Verified</span>
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-3.5 h-3.5" />
+                            <span>{validationError ? 'Retry Save' : 'Save Configuration'}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -297,14 +323,16 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Model Selection */}
             <div className="space-y-3">
-              <button
-                onClick={() => { setAnimateModels(true); setModelsExpanded(!modelsExpanded); }}
-                className="flex items-center gap-2 text-white/40 mb-2 w-full hover:text-white/60 transition-colors"
-              >
-                <Settings2 className="w-3 h-3" />
-                <span className="text-[10px] font-bold tracking-widest uppercase flex-1 text-left">Available Models</span>
-                {modelsExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-              </button>
+              <div className="flex items-center justify-between mb-2 w-full">
+                <button
+                  onClick={() => { setAnimateModels(true); setModelsExpanded(!modelsExpanded); }}
+                  className="flex items-center gap-2 text-white/40 hover:text-white/60 transition-colors flex-1"
+                >
+                  <Settings2 className="w-3 h-3" />
+                  <span className="text-[10px] font-bold tracking-widest uppercase text-left">Available Models</span>
+                  {modelsExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                </button>
+              </div>
 
               <div
                 className={`space-y-1 ${modelsExpanded && animateModels ? 'animate-fade-up' : ''}`}

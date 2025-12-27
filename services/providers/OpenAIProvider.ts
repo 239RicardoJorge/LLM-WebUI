@@ -133,7 +133,41 @@ export class OpenAIProvider implements ILLMProvider {
         this.messageHistory = [];
     }
 
+    async checkModelAvailability(modelId: string, apiKey: string): Promise<{ available: boolean; error?: string; errorCode?: string }> {
+        try {
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: modelId,
+                    messages: [{ role: 'user', content: 'Hi' }],
+                    max_tokens: 1
+                })
+            });
 
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error?.message || "OpenAI API Error");
+            }
+            return { available: true };
+        } catch (error: any) {
+            console.warn(`[OpenAIProvider] Availability check failed for ${modelId}:`, error);
+            let errorCode = "Error";
+            let errorMessage = error.message || 'Unknown error';
 
+            if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota') || errorMessage.toLowerCase().includes('rate limit')) {
+                errorCode = "429";
+            } else if (errorMessage.includes('400') || errorMessage.toLowerCase().includes('invalid')) {
+                errorCode = "400";
+            } else if (errorMessage.includes('404') || errorMessage.toLowerCase().includes('not found')) {
+                errorCode = "400";
+                errorMessage = "Model not found or not accessible with this key.";
+            }
 
+            return { available: false, error: errorMessage, errorCode };
+        }
+    }
 }

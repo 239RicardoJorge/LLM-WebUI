@@ -55,10 +55,16 @@ const App: React.FC = () => {
   useEffect(() => {
     const fetchModels = async () => {
       let models: ModelOption[] = [];
+
+      // We will collect models to verify here
+      let modelsToVerify: { provider: string, modelId: string, key: string }[] = [];
+
       if (apiKeys.google) {
         try {
           const googleModels = await UnifiedService.validateKeyAndGetModels('google', apiKeys.google);
           models = [...models, ...googleModels];
+          // Queue for verification
+          googleModels.forEach(m => modelsToVerify.push({ provider: 'google', modelId: m.id, key: apiKeys.google }));
         } catch (e: any) {
           toast.error(`Google API Error: ${e.message || 'Validation failed'}`);
         }
@@ -67,20 +73,125 @@ const App: React.FC = () => {
         try {
           const openaiModels = await UnifiedService.validateKeyAndGetModels('openai', apiKeys.openai);
           models = [...models, ...openaiModels];
+          // Queue for verification
+          openaiModels.forEach(m => modelsToVerify.push({ provider: 'openai', modelId: m.id, key: apiKeys.openai }));
         } catch (e: any) {
           toast.error(`OpenAI API Error: ${e.message || 'Validation failed'}`);
         }
       }
+
       setAvailableModels(models);
       localStorage.setItem('ccs_available_models', JSON.stringify(models));
+
       if (models.length > 0 && (!currentModel || !models.find(m => m.id === currentModel))) {
         setCurrentModel(models[0].id);
       }
 
-
+      // BACKGROUND VERIFICATION
+      // This initial fetchModels effect should only verify newly discovered models or models that were previously unavailable.
+      // The `unavailableModels` state is used to filter which models need re-verification.
+      if (modelsToVerify.length > 0) {
+        // Run in background, don't await
+        verifyModels(modelsToVerify);
+      }
     };
+
     fetchModels();
   }, [apiKeys]);
+
+  // This effect is for "smart refresh" - only re-verifying models that are currently marked unavailable.
+  useEffect(() => {
+    // Only verify models if we have keys
+    const itemsToVerify: { provider: string, modelId: string, key: string }[] = [];
+    const unavailableIds = Object.keys(unavailableModels);
+
+    // If no models are unavailable, we skip auto-verification on load/key-change
+    // This assumes "Available" status is sticky until proven otherwise by a manual chat failure.
+    if (unavailableIds.length === 0) {
+      console.log("[Smart Refresh] All models currently marked Available. Skipping background check.");
+      return;
+    }
+
+    availableModels.forEach(m => {
+      // STRICT MODE: Only add to verification list if it is currently marked unavailable
+      if (!unavailableModels[m.id]) return;
+
+      if (m.provider === 'google' && apiKeys.google) {
+        itemsToVerify.push({ provider: 'google', modelId: m.id, key: apiKeys.google });
+      } else if (m.provider === 'openai' && apiKeys.openai) {
+        itemsToVerify.push({ provider: 'openai', modelId: m.id, key: apiKeys.openai });
+      }
+    });
+
+    if (itemsToVerify.length > 0) {
+      verifyModels(itemsToVerify);
+    }
+    // Checking unavailableModels in dependencies could cause loops if verifyModels updates it.
+    // We rely on the fact that this effect runs on Mount (when unavailableModels is init from storage)
+    // or when Keys/Models change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKeys, availableModels]);
+
+  const verifyModels = async (items: { provider: string, modelId: string, key: string }[]) => {
+
+    // We can do this in parallel batches to be faster
+    const promises = items.map(async (item) => {
+      try {
+        const result = await UnifiedService.checkModelAvailability(item.provider, item.modelId, item.key);
+        if (!result.available) {
+          // Update state
+          // User requested specific codes: (400) or (429).
+          // If it's not 429, we assume it's a validation/availability error (400).
+          const finalCode = result.errorCode === '429' ? '429' : '400';
+
+          setUnavailableModels(prev => {
+            if (prev[item.modelId] === finalCode) return prev;
+            return { ...prev, [item.modelId]: finalCode };
+          });
+          setUnavailableModelErrors(prev => ({ ...prev, [item.modelId]: result.error || 'Unknown Error' }));
+        } else {
+          // Explicitly clear if it becomes available (e.g. if we had a persistent error saved)
+          setUnavailableModels(prev => {
+            const next = { ...prev };
+            delete next[item.modelId];
+            return next;
+          });
+          setUnavailableModelErrors(prev => {
+            const next = { ...prev };
+            delete next[item.modelId];
+            return next;
+          });
+        }
+      } catch (e) {
+        console.error(`Error verifying ${item.modelId}`, e);
+      }
+    });
+
+    await Promise.all(promises);
+    console.log("Background verification complete.");
+  };
+
+  const handleManualRefresh = async () => {
+    // Collect all models we currently have loaded
+    const itemsToVerify: { provider: string, modelId: string, key: string }[] = [];
+    // Manual Refresh = Full Refresh. We verify EVERYTHING to give the user peace of mind.
+
+    availableModels.forEach(m => {
+      if (m.provider === 'google' && apiKeys.google) {
+        itemsToVerify.push({ provider: 'google', modelId: m.id, key: apiKeys.google });
+      } else if (m.provider === 'openai' && apiKeys.openai) {
+        itemsToVerify.push({ provider: 'openai', modelId: m.id, key: apiKeys.openai });
+      }
+    });
+
+    if (itemsToVerify.length > 0) {
+      toast.info(`Full Refresh: Verifying ${itemsToVerify.length} models...`);
+      await verifyModels(itemsToVerify);
+      toast.success("Verification Complete");
+    } else {
+      toast.warning("No models configured to verify.");
+    }
+  };
 
 
   useEffect(() => {
@@ -326,6 +437,7 @@ const App: React.FC = () => {
         availableModels={availableModels}
         highlightKeys={highlightKeys}
         unavailableModels={unavailableModels}
+        onRefreshModels={handleManualRefresh}
       />
 
       <main className="flex-1 h-full relative z-0">

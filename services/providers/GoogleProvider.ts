@@ -75,19 +75,49 @@ export class GoogleProvider implements ILLMProvider {
         signal?: AbortSignal
     ): AsyncGenerator<string, void, unknown> {
         this.initClient(apiKey);
-        this.initChat(modelId);
+
+        // Initial setup
+        if (!this.chatSession || this.currentModel !== modelId) {
+            this.initChat(modelId);
+        }
 
         if (!this.chatSession) throw new Error("Google Chat Session failed");
 
+        // Helper to perform the actual send
+        const performSend = async () => {
+            if (attachment) {
+                const parts = [
+                    { inlineData: { mimeType: attachment.mimeType, data: attachment.data } },
+                    { text: message }
+                ];
+                // @ts-ignore
+                return await this.chatSession.sendMessageStream({ message: parts });
+            } else {
+                // @ts-ignore
+                return await this.chatSession.sendMessageStream({ message });
+            }
+        };
+
         let result;
-        if (attachment) {
-            const parts = [
-                { inlineData: { mimeType: attachment.mimeType, data: attachment.data } },
-                { text: message }
-            ];
-            result = await this.chatSession.sendMessageStream({ message: parts });
-        } else {
-            result = await this.chatSession.sendMessageStream({ message });
+        try {
+            result = await performSend();
+        } catch (error: any) {
+            // Fallback for models that don't support system instructions (e.g. Gemma)
+            if (error.message && (error.message.includes("Developer instruction") || error.message.includes("System instruction"))) {
+                console.warn(`[GoogleProvider] Model ${modelId} rejected system instruction. Retrying without it.`);
+
+                // Re-initialize without config
+                this.chatSession = this.googleClient!.chats.create({
+                    model: modelId,
+                    // No config (systemInstruction)
+                });
+                this.currentModel = modelId;
+
+                // Retry send
+                result = await performSend();
+            } else {
+                throw error;
+            }
         }
 
         for await (const chunk of result) {
@@ -104,7 +134,46 @@ export class GoogleProvider implements ILLMProvider {
         this.currentModel = null;
     }
 
+    async checkModelAvailability(modelId: string, apiKey: string): Promise<{ available: boolean; error?: string; errorCode?: string }> {
+        try {
+            // Use REST API to avoid SDK version incompatibilities
+            // normalize modelId if it doesn't start with 'models/' (though API usually accepts short names, safer to check)
+            // Actually, the API prefers 'models/gemini-pro', but usually works. 
+            // The `validateKey` stores IDs without 'models/', e.g. 'gemini-pro'.
+            // The generation endpoint usually expects `models/{modelId}:generateContent`.
 
+            const cleanModelId = modelId.startsWith('models/') ? modelId.slice(7) : modelId;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModelId}:generateContent?key=${apiKey}`;
 
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{ role: 'user', parts: [{ text: 'Hi' }] }],
+                    generationConfig: { maxOutputTokens: 1 }
+                })
+            });
 
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const message = errorData.error?.message || response.statusText || 'Unknown Error';
+                throw new Error(`${response.status} ${message}`);
+            }
+
+            return { available: true };
+        } catch (error: any) {
+            console.warn(`[GoogleProvider] Availability check failed for ${modelId}:`, error);
+            let errorCode = "Error";
+            let errorMessage = error.message || 'Unknown error';
+
+            if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota') || errorMessage.toLowerCase().includes('rate limit')) {
+                errorCode = "429";
+            } else if (errorMessage.includes('400') || errorMessage.toLowerCase().includes('invalid')) {
+                errorCode = "400";
+            }
+            return { available: false, error: errorMessage, errorCode };
+        }
+    }
 }
