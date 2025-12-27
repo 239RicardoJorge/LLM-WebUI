@@ -77,13 +77,14 @@ export class OpenAIProvider implements ILLMProvider {
             ...this.messageHistory
         ];
 
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        const response = await fetch('/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
+                'x-api-key': apiKey
             },
             body: JSON.stringify({
+                provider: 'openai',
                 model: modelId,
                 messages: messages,
                 stream: true
@@ -92,8 +93,8 @@ export class OpenAIProvider implements ILLMProvider {
         });
 
         if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.error?.message || "OpenAI API Error");
+            const err = await response.text(); // Proxy returns text error usually
+            throw new Error(err || "OpenAI API Error");
         }
 
         if (!response.body) throw new Error("No response body");

@@ -1,55 +1,22 @@
-import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
-import { Attachment, ModelOption } from "../../types"; // Adjusted path
+import { Attachment, ModelOption } from "../../types";
 import { ILLMProvider } from "./types";
 import { isGoogleModelAllowed, sortGoogleModels } from "../../config/modelRules";
 import { GoogleModelListSchema } from "../schemas";
 
-
 export class GoogleProvider implements ILLMProvider {
     readonly id = 'google';
-    private googleClient: GoogleGenAI | null = null;
-    private chatSession: Chat | null = null;
-    private currentModel: string | null = null;
-    private currentApiKey: string | null = null;
-
-    private initClient(apiKey: string) {
-        if (this.googleClient && this.currentApiKey === apiKey) return;
-
-        try {
-            this.googleClient = new GoogleGenAI({ apiKey });
-            this.currentApiKey = apiKey;
-            this.chatSession = null; // Reset chat when client changes
-        } catch (e) {
-            console.error("Failed to initialize Google Client", e);
-            throw e;
-        }
-    }
-
-    private initChat(modelId: string) {
-        if (!this.googleClient) throw new Error("Google Client not initialized");
-
-        // precise session reuse check
-        if (this.chatSession && this.currentModel === modelId) return;
-
-        this.chatSession = this.googleClient.chats.create({
-            model: modelId,
-            config: {
-                systemInstruction: "You are a helpful AI assistant. You can analyze images and files. Be concise and accurate.",
-            },
-        });
-        this.currentModel = modelId;
-    }
+    // Google uses 'parts' structure usually, but we can store it normalized or raw.
+    // Let's store raw Google Content structure for simplicity in sending to API.
+    private messageHistory: { role: string, parts: { text?: string, inlineData?: any }[] }[] = [];
 
     async validateKey(apiKey: string): Promise<ModelOption[]> {
         if (!apiKey) return [];
 
         try {
-            // We use the REST API for validation/listing as per original implementation
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey.trim()}`);
             if (response.status === 400 || response.status === 403) throw new Error("Invalid API Key");
 
             const data = await response.json();
-
             const parsed = GoogleModelListSchema.safeParse(data);
             if (!parsed.success) {
                 console.warn("Google API Schema Validation Warning:", parsed.error);
@@ -84,64 +51,103 @@ export class GoogleProvider implements ILLMProvider {
         systemInstruction?: string,
         signal?: AbortSignal
     ): AsyncGenerator<string, void, unknown> {
-        this.initClient(apiKey);
 
-        // Initial setup
-        if (!this.chatSession || this.currentModel !== modelId) {
-            this.initChat(modelId);
+        // Construct new user message
+        let parts: any[] = [];
+        if (attachment) {
+            parts.push({ inlineData: { mimeType: attachment.mimeType, data: attachment.data } });
         }
+        parts.push({ text: message });
 
-        if (!this.chatSession) throw new Error("Google Chat Session failed");
+        const newUserMessage = { role: 'user', parts };
+        this.messageHistory.push(newUserMessage);
 
-        // Helper to perform the actual send
-        const performSend = async () => {
-            if (attachment) {
-                const parts = [
-                    { inlineData: { mimeType: attachment.mimeType, data: attachment.data } },
-                    { text: message }
-                ];
-                // @ts-ignore
-                return await this.chatSession.sendMessageStream({ message: parts });
-            } else {
-                // @ts-ignore
-                return await this.chatSession.sendMessageStream({ message });
+        // Prepare full history (contents)
+        // Note: System Instruction is passed in 'system_instruction' or 'systemInstruction' field, NOT in contents usually for Google REST.
+        // Actually, v1beta uses 'systemInstruction' field at top level?
+        // Let's put it in the body if present.
+
+        const payload: any = {
+            provider: 'google',
+            model: modelId,
+            contents: this.messageHistory,
+            generationConfig: {
+                maxOutputTokens: 8192, // Default high limit
             }
         };
 
-        let result;
-        try {
-            result = await performSend();
-        } catch (error: any) {
-            // Fallback for models that don't support system instructions (e.g. Gemma)
-            if (error.message && (error.message.includes("Developer instruction") || error.message.includes("System instruction"))) {
-                console.warn(`[GoogleProvider] Model ${modelId} rejected system instruction. Retrying without it.`);
-
-                // Re-initialize without config
-                this.chatSession = this.googleClient!.chats.create({
-                    model: modelId,
-                    // No config (systemInstruction)
-                });
-                this.currentModel = modelId;
-
-                // Retry send
-                result = await performSend();
-            } else {
-                throw error;
-            }
+        if (systemInstruction) {
+            payload.systemInstruction = { parts: [{ text: systemInstruction }] };
         }
 
-        for await (const chunk of result) {
-            if (signal?.aborted) {
-                break;
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey
+            },
+            body: JSON.stringify(payload),
+            signal
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(err || "Google API Error");
+        }
+
+        if (!response.body) throw new Error("No response body");
+
+        // Use standard Reader (Web Stream from Proxy)
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponseText = "";
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                // The Proxy blindly forwards chunks.
+                // Google REST API returns JSON structure "data: " lines (SSE)?
+                // Wait. server.js uses `upstreamUrl = ... &alt=sse`.
+                // So Google returns SSE events.
+                // My proxy forwards them as raw bytes.
+                // So here in frontend we receive SSE stream `data: ...`.
+
+                const chunkStr = decoder.decode(value, { stream: true });
+                const lines = chunkStr.split('\n');
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed || !trimmed.startsWith('data: ')) continue;
+
+                    const jsonStr = trimmed.slice(6);
+                    if (jsonStr === '[DONE]') continue; // Not sure if Google sends [DONE], OpenAI does.
+
+                    try {
+                        const data = JSON.parse(jsonStr);
+                        // Google SSE format: { candidates: [ { content: { parts: [ { text: "..." } ] } } ] }
+                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (text) {
+                            fullResponseText += text;
+                            yield text;
+                        }
+                    } catch (e) {
+                        // ignore partial/invalid json
+                    }
+                }
             }
-            const c = chunk as GenerateContentResponse;
-            if (c.text) yield c.text;
+        } finally {
+            // Update history with model response
+            if (fullResponseText) {
+                this.messageHistory.push({ role: 'model', parts: [{ text: fullResponseText }] });
+            }
+            reader.releaseLock();
         }
     }
 
     async resetSession() {
-        this.chatSession = null;
-        this.currentModel = null;
+        this.messageHistory = [];
     }
 
     async checkModelAvailability(modelId: string, apiKey: string): Promise<{ available: boolean; error?: string; errorCode?: string }> {
