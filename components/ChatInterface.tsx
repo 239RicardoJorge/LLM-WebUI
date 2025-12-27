@@ -162,7 +162,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div
         className="flex-1 overflow-y-auto px-4 md:px-0"
       >
-        <div className="max-w-3xl mx-auto pt-24 pb-48 min-h-full flex flex-col justify-center">
+        <div className="max-w-3xl mx-auto pt-24 pb-32 min-h-full flex flex-col justify-center">
 
           {/* Hero / Empty State */}
           {messages.length === 0 && (
