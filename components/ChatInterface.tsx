@@ -1,6 +1,7 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, Suspense } from 'react';
 import { ArrowUp, Menu, Terminal, Paperclip, X, Square, AlertTriangle, ExternalLink } from 'lucide-react';
-import MarkdownRenderer from './MarkdownRenderer';
+// Lazy load MarkdownRenderer to split heavy dependencies (react-markdown, remark, katex)
+const MarkdownRenderer = React.lazy(() => import('./MarkdownRenderer'));
 import { ChatMessage, Role, Attachment } from '../types';
 
 interface ChatInterfaceProps {
@@ -86,11 +87,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
     }
   }, [input]);
-
-  // Auto-focus removed to prevent mobile keyboard popping and layout shifts
-  // useEffect(() => {
-  //   textareaRef.current?.focus();
-  // }, []);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -286,7 +282,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       <span className="text-[10px] font-bold tracking-widest uppercase">Response</span>
                     </div>
                     <div className="prose-container break-words hyphens-auto">
-                      <MarkdownRenderer content={msg.content} />
+                      <Suspense fallback={
+                        <div className="space-y-3 animate-pulse">
+                          <div className="h-4 bg-white/10 rounded w-3/4"></div>
+                          <div className="h-4 bg-white/10 rounded w-1/2"></div>
+                          <div className="h-4 bg-white/10 rounded w-5/6"></div>
+                        </div>
+                      }>
+                        <MarkdownRenderer content={msg.content} />
+                      </Suspense>
                     </div>
                   </div>
                 )}
