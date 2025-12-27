@@ -15,7 +15,7 @@ interface SidebarProps {
   onApiKeysChange: (keys: ApiKeys) => void;
   availableModels: ModelOption[];
   highlightKeys?: boolean;
-  rateLimitedModels?: Set<string>;
+  unavailableModels?: Record<string, string>;
 }
 
 const PROVIDER_URLS = {
@@ -33,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onApiKeysChange,
   availableModels,
   highlightKeys = false,
-  rateLimitedModels = new Set(),
+  unavailableModels = {},
 }) => {
   // Simulated System Stats (Raspberry Pi 4-core simulation)
   const [cpuCores, setCpuCores] = useState<number[]>(() => {
@@ -323,7 +323,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                     .filter(model => modelsExpanded || model.id === currentModel)
                     .map((model) => {
                       const isActive = currentModel === model.id;
-                      const isRateLimited = rateLimitedModels.has(model.id);
+                      const errorCode = unavailableModels[model.id]; // Get specific error code if exists
+                      const isUnavailable = !!errorCode;
 
                       return (
                         <button
@@ -334,16 +335,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                               ${isActive
                               ? 'bg-white/5 border-white/10 shadow-lg'
                               : 'bg-transparent border-white/0 hover:bg-white/5'}
-                              ${isRateLimited ? 'border-red-500/10 bg-red-500/5' : ''}
+                              ${isUnavailable ? 'border-red-500/10 bg-red-500/5' : ''}
                           `}
                         >
                           <div className="flex items-center justify-between mb-1 relative z-10">
-                            <div className={`flex items-center gap-2 ${isRateLimited ? 'opacity-50 grayscale' : ''}`}>
+                            <div className={`flex items-center gap-2 ${isUnavailable ? 'opacity-50 grayscale' : ''}`}>
                               <span className={`text-[13px] font-medium tracking-tight ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-300'}`}>
                                 {model.name}
                               </span>
-                              {isRateLimited ? (
-                                <span className="text-[10px] font-bold text-red-500 bg-red-500/10 px-1 rounded tracking-tighter">429</span>
+                              {isUnavailable ? (
+                                <span className="text-[10px] font-bold text-red-500 bg-red-500/10 px-1 rounded tracking-tighter">({errorCode})</span>
                               ) : (
                                 <>
                                   {model.provider === 'google' && <Zap className="w-3 h-3 text-blue-400" />}
@@ -353,7 +354,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </div>
                             {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
                           </div>
-                          <div className={`text-[10px] truncate ${isActive ? 'text-gray-400' : 'text-gray-700'} ${isRateLimited ? 'opacity-50 grayscale' : ''}`}>
+                          <div className={`text-[10px] truncate ${isActive ? 'text-gray-400' : 'text-gray-700'} ${isUnavailable ? 'opacity-50 grayscale' : ''}`}>
                             {model.description}
                           </div>
                         </button>

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowUp, Menu, Terminal, Paperclip, X, Square } from 'lucide-react';
+import { ArrowUp, Menu, Terminal, Paperclip, X, Square, AlertTriangle } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import { ChatMessage, Role, Attachment } from '../types';
 
@@ -10,7 +10,7 @@ interface ChatInterfaceProps {
   onStop: () => void;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
-  isRateLimited?: boolean;
+  unavailableCode?: string;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -20,7 +20,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onStop,
   sidebarOpen,
   setSidebarOpen,
-  isRateLimited = false
+  unavailableCode
 }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<Attachment | undefined>(undefined);
@@ -166,15 +166,35 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       >
         <div className="max-w-3xl mx-auto pt-24 pb-32 min-h-full flex flex-col justify-center">
 
-          {/* Hero / Empty State */}
-          {messages.length === 0 && !isRateLimited && (
-            <div className="flex flex-col items-center justify-center space-y-8 animate-fade-up opacity-60">
-              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl">
-                <Terminal className="w-8 h-8 text-white/40" />
-              </div>
-              <p className="text-sm font-mono text-gray-500 tracking-widest uppercase">
-                System Ready
-              </p>
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center space-y-6 animate-fade-up">
+              {unavailableCode ? (
+                <div className="flex flex-col items-center gap-4 text-center">
+                  <h1 className="text-8xl font-bold font-mono text-white/5 tracking-tighter select-none">
+                    {unavailableCode}
+                  </h1>
+
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm font-mono text-gray-500 tracking-[0.2em] uppercase">
+                      Model Unavailable
+                    </p>
+                    <p className="text-xs font-mono text-gray-600 tracking-widest uppercase">
+                      {unavailableCode === '429' ? 'Rate Limit Exceeded' :
+                        unavailableCode === '400' ? 'Invalid Request' :
+                          'Connection Failed'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl">
+                    <Terminal className="w-8 h-8 text-white/40" />
+                  </div>
+                  <p className="text-sm font-mono text-gray-500 tracking-widest uppercase">
+                    System Ready
+                  </p>
+                </>
+              )}
             </div>
           )}
 
@@ -297,7 +317,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     m-2 p-3 rounded-full transition-all duration-300 flex-shrink-0
                     ${isLoading
                     ? 'bg-white text-black hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]'
-                    : (input.trim() || attachment)
+                    : (input.trim() || attachment) && !unavailableCode
                       ? 'bg-white text-black hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]'
                       : 'bg-white/5 text-gray-600 cursor-not-allowed'}
                     `}

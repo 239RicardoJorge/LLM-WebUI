@@ -91,19 +91,21 @@ const App: React.FC = () => {
 
   const serviceRef = useRef<UnifiedService | null>(null);
 
+
   const [activeModelDef, setActiveModelDef] = useState<ModelOption | undefined>(undefined);
-  const [rateLimitedModels, setRateLimitedModels] = useState<Set<string>>(() => {
+  // Store error codes: { [modelId]: "429" | "400" | "Error" }
+  const [unavailableModels, setUnavailableModels] = useState<Record<string, string>>(() => {
     try {
-      const saved = localStorage.getItem('ccs_rate_limited_models');
-      return saved ? new Set(JSON.parse(saved)) : new Set();
+      const saved = localStorage.getItem('ccs_unavailable_models');
+      return saved ? JSON.parse(saved) : {};
     } catch (e) {
-      return new Set();
+      return {};
     }
   });
 
   useEffect(() => {
-    localStorage.setItem('ccs_rate_limited_models', JSON.stringify(Array.from(rateLimitedModels)));
-  }, [rateLimitedModels]);
+    localStorage.setItem('ccs_unavailable_models', JSON.stringify(unavailableModels));
+  }, [unavailableModels]);
 
   useEffect(() => {
     if (currentModel) {
@@ -112,15 +114,16 @@ const App: React.FC = () => {
     }
   }, [currentModel, availableModels]);
 
-  // Auto-check availability for rate-limited models when models become available
+  // Auto-check availability for unavailable models when models become available
   useEffect(() => {
     const checkRecovery = async () => {
-      if (rateLimitedModels.size === 0 || availableModels.length === 0) return;
+      const unavailableIds = Object.keys(unavailableModels);
+      if (unavailableIds.length === 0 || availableModels.length === 0) return;
 
       const recovered: string[] = [];
-      const promises = Array.from(rateLimitedModels).map(async (modelId) => {
+      const promises = unavailableIds.map(async (modelId) => {
         const model = availableModels.find(m => m.id === modelId);
-        // If model not found in available list, remove it from RL list (cleanup)
+        // If model not found in available list, remove it from list (cleanup)
         if (!model) {
           recovered.push(modelId);
           return;
@@ -136,20 +139,19 @@ const App: React.FC = () => {
             recovered.push(modelId);
           }
         } catch (e) {
-          // Keep as rate limited on error
+          // Keep as unavailable on error
         }
       });
 
       await Promise.all(promises);
 
       if (recovered.length > 0) {
-        setRateLimitedModels(prev => {
-          const next = new Set(prev);
-          recovered.forEach(id => next.delete(id));
+        setUnavailableModels(prev => {
+          const next = { ...prev };
+          recovered.forEach(id => delete next[id]);
           return next;
         });
-        // Optional: We could notify user, but visual update is cleaner
-        console.log("Models recovered/cleaned from rate limit:", recovered);
+        console.log("Models recovered/cleaned:", recovered);
       }
     };
 
@@ -245,13 +247,13 @@ const App: React.FC = () => {
       let accumulatedText = '';
       let botMsgId: string | null = null;
 
-      // Auto-recover logic: If this model was rate limited but we are trying again,
+      // Auto-recover logic: If this model was unavailable but we are trying again,
       // and we got this far (stream starting), clear the limit flag.
-      if (rateLimitedModels.has(currentModel)) {
-        setRateLimitedModels(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(currentModel);
-          return newSet;
+      if (unavailableModels[currentModel]) {
+        setUnavailableModels(prev => {
+          const next = { ...prev };
+          delete next[currentModel];
+          return next;
         });
       }
 
@@ -279,33 +281,36 @@ const App: React.FC = () => {
       }
       console.error("Chat error:", error);
 
+      // General Error Handling for ALL errors
       let errorMessage = error.message || 'Connection interrupted';
 
-      // Standardize Rate Limit Errors
-      if (
-        errorMessage.includes('429') ||
-        errorMessage.toLowerCase().includes('quota') ||
-        errorMessage.toLowerCase().includes('rate limit')
-      ) {
-        errorMessage = "Oops! Rate limit exceeded (429). Please try again later.";
+      // 1. Rollback: Remove the user message
+      setMessages(prev => prev.filter(msg => msg.id !== newUserMsg.id));
 
-        // 1. Rollback: Remove the user message we just added
-        setMessages(prev => prev.filter(msg => msg.id !== newUserMsg.id));
-
-        // 2. Disable the model visually
-        setRateLimitedModels(prev => {
-          const newSet = new Set(prev);
-          newSet.add(currentModel);
-          return newSet;
-        });
-
-        toast.error(errorMessage);
-        return true; // Return TRUE to clear the input box (as requested)
+      // Determine error code
+      let errorCode = "Error";
+      if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota') || errorMessage.toLowerCase().includes('rate limit')) {
+        errorCode = "429";
+      } else if (errorMessage.includes('400') || errorMessage.toLowerCase().includes('invalid request')) {
+        errorCode = "400";
       }
 
-      toast.error(errorMessage);
+      // 2. Disable the model visually with specific code
+      setUnavailableModels(prev => ({
+        ...prev,
+        [currentModel]: errorCode
+      }));
 
-      // Removed setMessages for error bubble as per user request
+      // 3. Show specific toast tailored to the error type
+      if (errorCode === "429") {
+        toast.error("Oops! Rate limit exceeded (429). Please try again later.");
+      } else if (errorCode === "400") {
+        toast.error("Oops! Invalid request (400). Please check the model or parameters.");
+      } else {
+        toast.error(errorMessage);
+      }
+      return true; // Return TRUE to clear input box
+
     } finally {
       setIsLoading(false);
       abortControllerRef.current = null;
@@ -335,7 +340,7 @@ const App: React.FC = () => {
         onApiKeysChange={handleApiKeysChange}
         availableModels={availableModels}
         highlightKeys={highlightKeys}
-        rateLimitedModels={rateLimitedModels}
+        unavailableModels={unavailableModels}
       />
 
       <main className="flex-1 h-full relative z-0">
@@ -346,7 +351,7 @@ const App: React.FC = () => {
           onStop={handleStopGeneration}
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
-          isRateLimited={rateLimitedModels.has(currentModel)}
+          unavailableCode={unavailableModels[currentModel]}
         />
       </main>
     </div>
