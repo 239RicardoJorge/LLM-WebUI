@@ -47,48 +47,56 @@ export const useModelManagement = () => {
 
     // BATCH UPDATE LOGIC (Gradual Population)
     const refreshModels = async (manual = false) => {
-        if (!apiKeys.google && !apiKeys.openai) {
+        const googleKey = apiKeys.google?.trim();
+        const openaiKey = apiKeys.openai?.trim();
+
+        if (!googleKey && !openaiKey) {
             setAvailableModels([]);
+            if (manual) {
+                toast.error("Please enter and save an API Key first.");
+            }
             return;
         }
 
         setIsRefreshing(true);
-        if (manual) toast.info("Refreshing models...");
 
         try {
             // 1. Fetch ALL models from providers (structure only)
             const [googleModels, openaiModels] = await Promise.all([
-                apiKeys.google ? UnifiedService.validateKeyAndGetModels('google', apiKeys.google).catch(() => []) : Promise.resolve([]),
-                apiKeys.openai ? UnifiedService.validateKeyAndGetModels('openai', apiKeys.openai).catch(() => []) : Promise.resolve([])
+                googleKey ? UnifiedService.validateKeyAndGetModels('google', googleKey).catch(() => []) : Promise.resolve([]),
+                openaiKey ? UnifiedService.validateKeyAndGetModels('openai', openaiKey).catch(() => []) : Promise.resolve([])
             ]);
 
             const allModels = [...(googleModels as ModelOption[]), ...(openaiModels as ModelOption[])];
 
+            if (manual) toast.info(`Refreshing ${allModels.length} models...`);
+
             // 2. Set Available Models IMMEDIATELY (Gradual Population)
+            // Note: We do NOT auto-select here anymore, to avoid "selecting unavailability".
+            // We wait for verification to finish before auto-selecting.
             setAvailableModels(allModels);
             localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AVAILABLE_MODELS, JSON.stringify(allModels));
 
-            // Select first if needed
-            if (!currentModel && allModels.length > 0) {
-                if (!allModels.find(m => m.id === currentModel)) {
-                    setCurrentModel(allModels[0].id);
-                }
-            }
-
             // 3. Background Verification (Gradual - Updates as they fail)
-            // We await the array of promises to keep 'isRefreshing' true for UI feedback, but they run in parallel
+            const currentUnavailableModels: Record<string, string> = {};
+            const currentUnavailableErrors: Record<string, string> = {};
+
             const verifyPromises = allModels.map(async (m) => {
-                const key = m.provider === 'google' ? apiKeys.google : apiKeys.openai;
+                const key = m.provider === 'google' ? googleKey : openaiKey;
                 if (!key) return;
 
                 const result = await UnifiedService.checkModelAvailability(m.provider, m.id, key);
 
                 if (!result.available) {
                     const finalCode = result.errorCode === '429' ? '429' : '400';
+                    currentUnavailableModels[m.id] = finalCode;
+                    currentUnavailableErrors[m.id] = result.error || 'Unknown Error';
+
+                    // Update State Gradual
                     setUnavailableModels(prev => ({ ...prev, [m.id]: finalCode }));
                     setUnavailableModelErrors(prev => ({ ...prev, [m.id]: result.error || 'Unknown Error' }));
                 } else {
-                    // Clear error if it existed
+                    // Clear error immediately if valid
                     setUnavailableModels(prev => {
                         const next = { ...prev };
                         delete next[m.id];
@@ -104,7 +112,26 @@ export const useModelManagement = () => {
 
             await Promise.all(verifyPromises);
 
-            if (manual) toast.success(`Refreshed: ${allModels.length} models found.`);
+            const availableCount = allModels.length - Object.keys(currentUnavailableModels).length;
+
+            // Auto-Select Logic: Ensure we have a valid selected model
+            // This runs AFTER population/verification is complete.
+            const firstValid = allModels.find(m => !currentUnavailableModels[m.id]);
+
+            if (firstValid) {
+                // If no current selection, or currently selected is invalid (unavailable)
+                if (!currentModel || currentUnavailableModels[currentModel]) {
+                    setCurrentModel(firstValid.id);
+                }
+            }
+
+            if (manual) {
+                if (availableCount > 0) {
+                    toast.success(`Success: ${availableCount} models available.`);
+                } else {
+                    toast.error("No models available. Check API keys or Quota.");
+                }
+            }
 
         } catch (error) {
             console.error("Model Refresh Error", error);

@@ -25,7 +25,8 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
     const [animateKeys, setAnimateKeys] = useState(false);
     const [draftKeys, setDraftKeys] = useState<ApiKeys>(apiKeys);
     const [isSaved, setIsSaved] = useState(false);
-    const [isValidating, setIsValidating] = useState(false);
+    const [isSavingKeys, setIsSavingKeys] = useState(false);
+    const [isRefreshingModels, setIsRefreshingModels] = useState(false);
     const [validationError, setValidationError] = useState<string | null>(null);
 
     // Force expansion if highlighted
@@ -56,7 +57,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
 
         // Start timer to show loading state ONLY after 1s
         loadingTimer = setTimeout(() => {
-            setIsValidating(true);
+            setIsSavingKeys(true);
             setValidationError(null);
         }, 1000);
 
@@ -86,7 +87,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
             setIsSaved(false);
         } finally {
             clearTimeout(loadingTimer!);
-            setIsValidating(false);
+            setIsSavingKeys(false);
         }
     };
 
@@ -158,26 +159,26 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                             <button
                                 onClick={async (e) => {
                                     e.stopPropagation();
-                                    setIsValidating(true);
+                                    setIsRefreshingModels(true);
                                     if (onRefreshModels) await onRefreshModels();
-                                    setIsValidating(false);
+                                    setIsRefreshingModels(false);
                                 }}
                                 className={`
                         flex items-center justify-center w-10 min-w-[2.5rem] rounded-lg border transition-all duration-300
                         ${validationError
                                         ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
                                         : 'bg-white/10 text-white hover:bg-white/20 border-white/5'}
-                        ${isValidating ? 'opacity-50 cursor-wait' : ''}
+                        ${isRefreshingModels ? 'opacity-50 cursor-wait' : ''}
                     `}
                                 title="Refresh Models"
-                                disabled={isValidating}
+                                disabled={isRefreshingModels}
                             >
-                                <RotateCw className={`w-4 h-4 ${isValidating ? 'animate-spin' : ''}`} />
+                                <RotateCw className={`w-4 h-4 ${isRefreshingModels ? 'animate-spin' : ''}`} />
                             </button>
 
                             <button
                                 onClick={handleSaveKeys}
-                                disabled={isValidating}
+                                disabled={isSavingKeys}
                                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all
                                 ${validationError ? 'duration-0' : 'duration-300'}
                                 ${isSaved
@@ -185,10 +186,10 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                                         : validationError
                                             ? 'bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20'
                                             : 'bg-white/10 text-white hover:bg-white/20 border border-white/5'}
-                        ${isValidating ? 'opacity-50 cursor-wait' : ''}
+                        ${isSavingKeys ? 'opacity-50 cursor-wait' : ''}
                             `}
                             >
-                                {isValidating ? (
+                                {isSavingKeys ? (
                                     <>
                                         <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                         <span>Validating...</span>
