@@ -21,6 +21,8 @@ const App: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
       const saved = localStorage.getItem('ccs_chat_messages');
@@ -122,9 +124,9 @@ const App: React.FC = () => {
     setSidebarOpen(false);
   };
 
-  const handleSendMessage = async (content: string, attachment?: Attachment) => {
+  const handleSendMessage = async (content: string, attachment?: Attachment): Promise<boolean> => {
     // 1. Basic Content Check
-    if (!content.trim() && !attachment) return;
+    if (!content.trim() && !attachment) return false;
 
     // 2. Generic API Key Check
     // Check if user has AT LEAST one key saved
@@ -136,8 +138,15 @@ const App: React.FC = () => {
       setSidebarOpen(true);
       setHighlightKeys(true);
       setTimeout(() => setHighlightKeys(false), 3800); // 1.8s * 2 = 3.6s + buffer
-      return;
+      return false;
     }
+
+    // Abort any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     // 3. Provider Specific Check (only if specific model is active)
     const currentProvider = activeModelDef?.provider || 'google';
@@ -148,14 +157,14 @@ const App: React.FC = () => {
       setSidebarOpen(true);
       setHighlightKeys(true);
       setTimeout(() => setHighlightKeys(false), 3800);
-      return;
+      return false;
     }
 
     // 4. Service Availability Check
     if (!serviceRef.current) {
       console.error("DEBUG: Service not initialized");
       toast.error("Critical Error: Service not initialized. Refresh page.");
-      return;
+      return false;
     }
 
     const newUserMsg: ChatMessage = {
@@ -172,7 +181,7 @@ const App: React.FC = () => {
     try {
       let accumulatedText = '';
       let botMsgId: string | null = null;
-      const stream = serviceRef.current.sendMessageStream(content, attachment);
+      const stream = serviceRef.current.sendMessageStream(content, attachment, controller.signal);
 
       for await (const chunk of stream) {
         if (!botMsgId) {
@@ -190,6 +199,10 @@ const App: React.FC = () => {
         ));
       }
     } catch (error: any) {
+      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+        console.log('Generation stopped by user');
+        return; // Silent exit on abort
+      }
       console.error("Chat error:", error);
       toast.error(`Error: ${error.message || 'Connection interrupted'}`);
       setMessages(prev => [...prev, {
@@ -201,6 +214,17 @@ const App: React.FC = () => {
       }]);
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
+    }
+    return true;
+  };
+
+  const handleStopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsLoading(false);
+      toast.info("Generation stopped");
     }
   };
 
@@ -224,6 +248,7 @@ const App: React.FC = () => {
           messages={messages}
           isLoading={isLoading}
           onSendMessage={handleSendMessage}
+          onStop={handleStopGeneration}
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
         />

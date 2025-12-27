@@ -70,7 +70,9 @@ export class GoogleProvider implements ILLMProvider {
         modelId: string,
         apiKey: string,
         message: string,
-        attachment?: Attachment
+        attachment?: Attachment,
+        systemInstruction?: string,
+        signal?: AbortSignal
     ): AsyncGenerator<string, void, unknown> {
         this.initClient(apiKey);
         this.initChat(modelId);
@@ -89,6 +91,9 @@ export class GoogleProvider implements ILLMProvider {
         }
 
         for await (const chunk of result) {
+            if (signal?.aborted) {
+                break;
+            }
             const c = chunk as GenerateContentResponse;
             if (c.text) yield c.text;
         }

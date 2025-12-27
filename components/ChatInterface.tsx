@@ -1,12 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowUp, Menu, Terminal, Paperclip, X } from 'lucide-react';
+import { ArrowUp, Menu, Terminal, Paperclip, X, Square } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import { ChatMessage, Role, Attachment } from '../types';
 
 interface ChatInterfaceProps {
   messages: ChatMessage[];
   isLoading: boolean;
-  onSendMessage: (message: string, attachment?: Attachment) => void;
+  onSendMessage: (message: string, attachment?: Attachment) => Promise<boolean>;
+  onStop: () => void;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
 }
@@ -15,6 +16,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   messages,
   isLoading,
   onSendMessage,
+  onStop,
   sidebarOpen,
   setSidebarOpen
 }) => {
@@ -86,7 +88,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   //   textareaRef.current?.focus();
   // }, []);
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     console.log("ChatInterface: handleSubmit called", { input, attachment, isLoading });
 
@@ -96,10 +98,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
 
     console.log("ChatInterface: Calling onSendMessage");
-    onSendMessage(input, attachment);
-    setInput('');
-    setAttachment(undefined);
-    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    const success = await onSendMessage(input, attachment);
+    if (success) {
+      setInput('');
+      setAttachment(undefined);
+      if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -285,16 +289,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               />
 
               <button
-                onClick={() => handleSubmit()}
-                disabled={(!input.trim() && !attachment) || isLoading}
+                onClick={() => isLoading ? onStop() : handleSubmit()}
+                disabled={(!input.trim() && !attachment && !isLoading)}
                 className={`
                     m-2 p-3 rounded-full transition-all duration-300 flex-shrink-0
-                    ${(input.trim() || attachment) && !isLoading
+                    ${isLoading
                     ? 'bg-white text-black hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]'
-                    : 'bg-white/5 text-gray-600 cursor-not-allowed'}
+                    : (input.trim() || attachment)
+                      ? 'bg-white text-black hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]'
+                      : 'bg-white/5 text-gray-600 cursor-not-allowed'}
                     `}
               >
-                <ArrowUp className="w-6 h-6 stroke-[2.5]" />
+                {isLoading ? (
+                  <Square className="w-5 h-5 fill-current" />
+                ) : (
+                  <ArrowUp className="w-6 h-6 stroke-[2.5]" />
+                )}
               </button>
             </div>
           </div>

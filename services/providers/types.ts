@@ -1,4 +1,4 @@
-import { Attachment, ModelOption, Message } from "../../components/types";
+import { Attachment, ModelOption } from "../../types";
 
 export interface ILLMProvider {
     readonly id: string;
@@ -10,7 +10,8 @@ export interface ILLMProvider {
         apiKey: string,
         message: string,
         attachment?: Attachment,
-        systemInstruction?: string
+        systemInstruction?: string,
+        signal?: AbortSignal
     ): AsyncGenerator<string, void, unknown>;
 
     // Optional: Reset session state (useful for stateful providers like Google)

@@ -47,13 +47,13 @@ export class UnifiedService {
         if (p.resetSession) await p.resetSession();
     }
 
-    public async *sendMessageStream(message: string, attachment?: Attachment): AsyncGenerator<string, void, unknown> {
+    public async *sendMessageStream(message: string, attachment?: Attachment, signal?: AbortSignal): AsyncGenerator<string, void, unknown> {
         if (!this.apiKey) {
             throw new Error("API Key missing for " + this.currentProvider);
         }
 
         const p = this.getProvider();
-        yield* p.sendMessageStream(this.currentModel, this.apiKey, message, attachment);
+        yield* p.sendMessageStream(this.currentModel, this.apiKey, message, attachment, undefined, signal);
     }
 
     private getProvider(): ILLMProvider {

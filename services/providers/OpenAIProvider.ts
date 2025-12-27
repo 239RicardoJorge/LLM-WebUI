@@ -40,7 +40,9 @@ export class OpenAIProvider implements ILLMProvider {
         modelId: string,
         apiKey: string,
         message: string,
-        attachment?: Attachment
+        attachment?: Attachment,
+        systemInstruction?: string,
+        signal?: AbortSignal
     ): AsyncGenerator<string, void, unknown> {
         // Construct message payload
         let contentPayload: any = message;
@@ -76,7 +78,8 @@ export class OpenAIProvider implements ILLMProvider {
                 model: modelId,
                 messages: messages,
                 stream: true
-            })
+            }),
+            signal
         });
 
         if (!response.ok) {
