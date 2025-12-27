@@ -334,11 +334,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                               ${isActive
                               ? 'bg-white/5 border-white/10 shadow-lg'
                               : 'bg-transparent border-white/0 hover:bg-white/5'}
-                              ${isRateLimited ? 'opacity-50 grayscale border-red-500/10 bg-red-500/5' : ''}
+                              ${isRateLimited ? 'border-red-500/10 bg-red-500/5' : ''}
                           `}
                         >
                           <div className="flex items-center justify-between mb-1 relative z-10">
-                            <div className="flex items-center gap-2">
+                            <div className={`flex items-center gap-2 ${isRateLimited ? 'opacity-50 grayscale' : ''}`}>
                               <span className={`text-[13px] font-medium tracking-tight ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-300'}`}>
                                 {model.name}
                               </span>
@@ -351,9 +351,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 </>
                               )}
                             </div>
-                            {isActive && !isRateLimited && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
+                            {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
                           </div>
-                          <div className={`text-[10px] truncate ${isActive ? 'text-gray-400' : 'text-gray-700'}`}>
+                          <div className={`text-[10px] truncate ${isActive ? 'text-gray-400' : 'text-gray-700'} ${isRateLimited ? 'opacity-50 grayscale' : ''}`}>
                             {model.description}
                           </div>
                         </button>

@@ -92,7 +92,18 @@ const App: React.FC = () => {
   const serviceRef = useRef<UnifiedService | null>(null);
 
   const [activeModelDef, setActiveModelDef] = useState<ModelOption | undefined>(undefined);
-  const [rateLimitedModels, setRateLimitedModels] = useState<Set<string>>(new Set());
+  const [rateLimitedModels, setRateLimitedModels] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('ccs_rate_limited_models');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch (e) {
+      return new Set();
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ccs_rate_limited_models', JSON.stringify(Array.from(rateLimitedModels)));
+  }, [rateLimitedModels]);
 
   useEffect(() => {
     if (currentModel) {
@@ -100,6 +111,50 @@ const App: React.FC = () => {
       setActiveModelDef(def);
     }
   }, [currentModel, availableModels]);
+
+  // Auto-check availability for rate-limited models when models become available
+  useEffect(() => {
+    const checkRecovery = async () => {
+      if (rateLimitedModels.size === 0 || availableModels.length === 0) return;
+
+      const recovered: string[] = [];
+      const promises = Array.from(rateLimitedModels).map(async (modelId) => {
+        const model = availableModels.find(m => m.id === modelId);
+        // If model not found in available list, remove it from RL list (cleanup)
+        if (!model) {
+          recovered.push(modelId);
+          return;
+        }
+
+        const apiKey = apiKeys[model.provider];
+        if (!apiKey) return;
+
+        try {
+          // Perform a lightweight check
+          const isAvailable = await UnifiedService.checkModelStatus(modelId, model.provider, apiKey);
+          if (isAvailable) {
+            recovered.push(modelId);
+          }
+        } catch (e) {
+          // Keep as rate limited on error
+        }
+      });
+
+      await Promise.all(promises);
+
+      if (recovered.length > 0) {
+        setRateLimitedModels(prev => {
+          const next = new Set(prev);
+          recovered.forEach(id => next.delete(id));
+          return next;
+        });
+        // Optional: We could notify user, but visual update is cleaner
+        console.log("Models recovered/cleaned from rate limit:", recovered);
+      }
+    };
+
+    checkRecovery();
+  }, [availableModels]); // Check when models are loaded or changed
 
   useEffect(() => {
     if (!activeModelDef) return;

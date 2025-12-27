@@ -62,7 +62,6 @@ export class UnifiedService {
         return p;
     }
 
-    // Static Facade for Validation
     public static async validateKeyAndGetModels(provider: Provider, apiKey: string): Promise<ModelOption[]> {
         // Instantiate specific provider just for validation
         let p: ILLMProvider;
@@ -75,5 +74,21 @@ export class UnifiedService {
         }
 
         return await p.validateKey(apiKey);
+    }
+
+    public static async checkModelStatus(modelId: string, provider: Provider, apiKey: string): Promise<boolean> {
+        let p: ILLMProvider;
+        if (provider === 'google') {
+            p = new GoogleProvider();
+        } else if (provider === 'openai') {
+            p = new OpenAIProvider();
+        } else {
+            return true;
+        }
+
+        if (p.checkModelAvailability) {
+            return await p.checkModelAvailability(modelId, apiKey);
+        }
+        return true;
     }
 }

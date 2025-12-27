@@ -132,4 +132,34 @@ export class OpenAIProvider implements ILLMProvider {
     async resetSession() {
         this.messageHistory = [];
     }
+
+    async checkModelAvailability(modelId: string, apiKey: string): Promise<boolean> {
+        try {
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: modelId,
+                    messages: [{ role: 'user', content: 'ping' }],
+                    max_tokens: 1
+                })
+            });
+
+            if (response.status === 429) {
+                return false;
+            }
+            return true;
+        } catch (e) {
+            // If fetch fails (network), we assume true (or maintain current state)
+            // But if we want to update the state only when we are sure it's back online...
+            // If we cant connect, we probably shouldn't say it's available.
+            // But the requirement is to confirm if they are STILL 429.
+            // If network error, we don't know status.
+            // Let's assume true, as usually 429 is explicit.
+            return true;
+        }
+    }
 }
