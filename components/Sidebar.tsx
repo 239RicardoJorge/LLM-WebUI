@@ -66,15 +66,21 @@ const Sidebar: React.FC<SidebarProps> = ({
     localStorage.setItem('ccs_sidebar_keys_expanded', JSON.stringify(keysExpanded));
   }, [keysExpanded]);
 
-  const [modelsExpanded, setModelsExpanded] = useState(() => {
-    const saved = localStorage.getItem('ccs_sidebar_models_expanded');
-    return saved !== null ? JSON.parse(saved) : true;
+  const [viewMode, setViewMode] = useState<'collapsed' | 'available' | 'all'>(() => {
+    const saved = localStorage.getItem('ccs_sidebar_view_mode');
+    return (saved as 'collapsed' | 'available' | 'all') || 'available';
   });
 
   useEffect(() => {
-    localStorage.setItem('ccs_sidebar_models_expanded', JSON.stringify(modelsExpanded));
-  }, [modelsExpanded]);
+    localStorage.setItem('ccs_sidebar_view_mode', viewMode);
+  }, [viewMode]);
 
+  const cycleViewMode = () => {
+    setAnimateModels(true);
+    if (viewMode === 'collapsed') setViewMode('available');
+    else if (viewMode === 'available') setViewMode('all');
+    else setViewMode('collapsed');
+  };
 
 
   // Validate Google Keys
@@ -325,18 +331,24 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="space-y-3">
               <div className="flex items-center justify-between mb-2 w-full">
                 <button
-                  onClick={() => { setAnimateModels(true); setModelsExpanded(!modelsExpanded); }}
-                  className="flex items-center gap-2 text-white/40 hover:text-white/60 transition-colors flex-1"
+                  onClick={cycleViewMode}
+                  className="flex items-center gap-2 text-white/40 hover:text-white/60 transition-colors flex-1 w-full"
                 >
                   <Settings2 className="w-3 h-3" />
-                  <span className="text-[10px] font-bold tracking-widest uppercase text-left">Available Models</span>
-                  {modelsExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                  <span className="text-[10px] font-bold tracking-widest uppercase flex-1 text-left">
+                    {viewMode === 'all' ? 'ALL MODELS' : (viewMode === 'available' ? 'AVAILABLE MODELS' : 'MODEL')}
+                  </span>
+
+                  {/* Icon Indication for Modes */}
+                  <div className="flex items-center gap-1">
+                    {viewMode !== 'collapsed' ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                  </div>
                 </button>
               </div>
 
               <div
-                className={`space-y-1 ${modelsExpanded && animateModels ? 'animate-fade-up' : ''}`}
-                key={modelsExpanded ? 'expanded' : 'collapsed'}
+                className={`space-y-1 ${viewMode !== 'collapsed' && animateModels ? 'animate-fade-up' : ''}`}
+                key={viewMode}
               >
                 {availableModels.length === 0 ? (
                   <div className="text-center py-6 px-4 border border-dashed border-white/10 rounded-xl bg-white/5">
@@ -346,12 +358,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </p>
                   </div>
                 ) : (
-                  // If collapsed, only show the currently selected model. If expanded, show all.
                   availableModels
-                    .filter(model => modelsExpanded || model.id === currentModel)
+                    .filter(model => {
+                      if (viewMode === 'collapsed') return model.id === currentModel;
+                      if (viewMode === 'available') return !unavailableModels[model.id];
+                      return true; // 'all'
+                    })
                     .map((model) => {
                       const isActive = currentModel === model.id;
-                      const errorCode = unavailableModels[model.id]; // Get specific error code if exists
+                      const errorCode = unavailableModels[model.id];
                       const isUnavailable = !!errorCode;
 
                       return (
@@ -392,15 +407,17 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
 
-            <div className="pt-4">
-              <button
-                onClick={onClearChat}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/5 text-gray-500 hover:text-red-400 hover:border-red-500/20 hover:bg-red-500/5 transition-all duration-300 group"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-medium tracking-wide">CLEAR CONTEXT</span>
-              </button>
-            </div>
+          </div>
+
+          {/* Fixed Clear Context Button */}
+          <div className="p-4 border-t border-white/5 bg-black/20 backdrop-blur-sm">
+            <button
+              onClick={onClearChat}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/5 text-gray-500 hover:text-red-400 hover:border-red-500/20 hover:bg-red-500/5 transition-all duration-300 group"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-medium tracking-wide">CLEAR CONTEXT</span>
+            </button>
           </div>
 
           {/* System Monitor (Bottom) */}
