@@ -217,7 +217,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                 href={url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-4 py-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-glass)] text-xs text-blue-400 hover:text-blue-300 hover:bg-[var(--bg-secondary)] transition-all flex items-center gap-2"
+                                className="px-4 py-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-glass)] text-xs text-blue-400 hover:text-blue-300 hover:bg-[var(--bg-secondary)] transition-all duration-500 flex items-center gap-2"
                               >
                                 <span>{label}</span>
                                 <ExternalLink className="w-3 h-3" />
@@ -236,7 +236,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     className="w-16 h-16 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-color)] flex items-center justify-center shadow-2xl"
                     style={{ transition: 'background-color 2s ease 0.5s, border-color 0.5s ease' }}
                   >
-                    <Terminal className="w-8 h-8 text-[var(--text-muted)] transition-colors duration-500" />
+                    <Terminal className="w-8 h-8 text-[var(--text-muted)]" style={{ transition: 'color 3s ease 1s' }} />
                   </div>
                   <p className="text-sm font-mono text-[var(--text-muted)] tracking-widest uppercase">
                     System Ready
@@ -337,7 +337,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   <p className="text-xs text-[var(--text-primary)] max-w-[150px] truncate">{attachment.name || 'File'}</p>
                   <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{attachment.mimeType.split('/')[1]}</p>
                 </div>
-                <button onClick={removeAttachment} className="p-1 hover:bg-[var(--bg-secondary)] rounded-full transition-colors">
+                <button onClick={removeAttachment} className="p-1 hover:bg-[var(--bg-secondary)] rounded-full transition-colors duration-500">
                   <X className="w-4 h-4 text-[var(--text-secondary)]" />
                 </button>
               </div>
@@ -346,11 +346,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {/* Input Glow */}
             <div className="absolute -inset-1 bg-gradient-to-r from-[var(--input-glow)] via-white/10 to-[var(--input-glow)] rounded-[2.5rem] blur opacity-0 group-hover:opacity-100 transition duration-1000"></div>
 
-            <div className="relative bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-[2rem] shadow-2xl overflow-hidden flex items-end p-2 transition-all duration-300 focus-within:bg-[var(--bg-primary)] focus-within:border-[var(--text-muted)]">
+            <div className="relative bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-[2rem] shadow-2xl overflow-hidden flex items-end p-2 transition-all duration-500 focus-within:bg-[var(--bg-primary)] focus-within:border-[var(--text-muted)]">
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading}
-                className="m-2 p-3 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-200"
+                className="m-2 p-3 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-500"
               >
                 <Paperclip className="w-5 h-5" />
               </button>
@@ -370,7 +370,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 onClick={() => isLoading ? onStop() : handleSubmit()}
                 disabled={(!input.trim() && !attachment && !isLoading)}
                 className={`
-                    m-2 p-3 rounded-full transition-all duration-300 flex-shrink-0
+                    m-2 p-3 rounded-full transition-all duration-500 flex-shrink-0
                     ${isLoading
                     ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]'
                     : (input.trim() || attachment) && !unavailableCode

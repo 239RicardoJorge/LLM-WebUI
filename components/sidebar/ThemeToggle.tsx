@@ -32,17 +32,12 @@ const ThemeToggle: React.FC = () => {
         return <Monitor className="w-4 h-4" />;
     };
 
-    const getTitle = () => {
-        if (theme === 'dark') return 'Dark Mode (click for Light)';
-        if (theme === 'light') return 'Light Mode (click for System)';
-        return 'System Mode (click for Dark)';
-    };
+
 
     return (
         <button
             onClick={cycleTheme}
-            className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-300"
-            title={getTitle()}
+            className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-500"
         >
             {getIcon()}
         </button>

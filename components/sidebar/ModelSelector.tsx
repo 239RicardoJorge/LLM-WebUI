@@ -40,7 +40,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
             <div className="flex items-center justify-between mb-2 w-full">
                 <button
                     onClick={cycleViewMode}
-                    className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex-1 w-full"
+                    className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-500 flex-1 w-full"
                 >
                     <Settings2 className="w-3 h-3" />
                     <span className={`text-[10px] font-bold tracking-widest uppercase flex-1 text-left ${isRefreshing ? 'animate-pulse' : ''}`}>
@@ -82,7 +82,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                     key={model.id}
                                     onClick={() => onModelChange(model.id)}
                                     className={`
-                              w-full p-3 rounded-xl transition-colors duration-300 border text-left group relative overflow-hidden
+                              w-full p-3 rounded-xl border text-left group relative overflow-hidden transition-[background-color,color,border-color,box-shadow,opacity] duration-500
                               ${isActive
                                             ? 'bg-[var(--bg-glass)] border-[var(--border-color)] shadow-lg'
                                             : 'bg-transparent border-transparent hover:bg-[var(--bg-glass)]'}

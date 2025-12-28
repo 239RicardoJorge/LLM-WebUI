@@ -42,14 +42,14 @@ const Sidebar: React.FC<SidebarProps> = ({
     <>
       {/* Mobile Backdrop */}
       <div
-        className={`fixed inset-0 bg-[var(--bg-primary)]/80 backdrop-blur-sm z-40 transition-opacity duration-300 lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 bg-[var(--bg-primary)]/80 backdrop-blur-sm z-40 transition-[opacity,background-color,color] duration-500 lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
       />
 
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-[300px]
         flex flex-col bg-[var(--bg-primary)] lg:bg-transparent
-        transform ${mounted ? 'transition-transform duration-500 cubic-bezier(0.19, 1, 0.22, 1)' : ''}
+        ${mounted ? 'transition-[transform,background-color,color,border-color] duration-500 cubic-bezier(0.19, 1, 0.22, 1)' : ''}
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         lg:static
       `}>
@@ -81,7 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="p-4 border-t border-[var(--border-color)]">
             <button
               onClick={onClearChat}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-red-400 hover:border-red-500/20 hover:bg-red-500/5 transition-all duration-300 group"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-red-400 hover:border-red-500/20 hover:bg-red-500/5 transition-all duration-500 group"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span className="text-[11px] font-medium tracking-wide">CLEAR CONTEXT</span>

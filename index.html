@@ -16,7 +16,7 @@
       --bg-primary: #faf8f5;
       --bg-secondary: #f0ebe3;
       --bg-depth: #faf8f5;
-      --bg-glass: rgba(250, 248, 245, 1);
+      --bg-glass: rgba(250, 248, 245, 0.9);
       --glass-border: rgba(0, 0, 0, 0.06);
       --glass-surface: rgba(240, 235, 227, 0.6);
       --text-primary: #2d2d2d;
@@ -38,7 +38,7 @@
       --bg-primary: #000000;
       --bg-secondary: #1c1c1e;
       --bg-depth: #000000;
-      --bg-glass: rgba(28, 28, 30, 0.6);
+      --bg-glass: rgba(28, 28, 30, 0.9);
       --glass-border: rgba(255, 255, 255, 0.08);
       --glass-surface: rgba(28, 28, 30, 0.4);
       --text-primary: #f5f5f7;
@@ -107,7 +107,7 @@
     *,
     *::before,
     *::after {
-      transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease, fill 0.5s ease;
+      transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), fill 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     /* Premium Scrollbar */
