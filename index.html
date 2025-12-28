@@ -29,7 +29,7 @@
       --cpu-bar: #4a4a4a;
       --indicator-bg: #ffffff;
       --indicator-border: rgba(0, 0, 0, 0.3);
-      --input-glow: rgba(180, 140, 100, 0.4);
+      --input-glow: rgba(180, 140, 100, 0.1);
       --input-hover: #f0ebe3;
     }
 
@@ -51,7 +51,7 @@
       --cpu-bar: #f5f5f7;
       --indicator-bg: #ffffff;
       --indicator-border: transparent;
-      --input-glow: rgba(56, 189, 248, 0.4);
+      --input-glow: rgba(56, 189, 248, 0.1);
       --input-hover: #0f172a;
     }
 
@@ -60,12 +60,47 @@
       background-color: var(--bg-depth);
       background-image: var(--accent-glow);
       background-attachment: fixed;
-      background-size: 100% 100vh;
+      background-size: 200% 200%;
       background-repeat: no-repeat;
       color: var(--text-primary);
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       overflow: hidden;
+      animation: gradient-drift 50s ease-in-out infinite;
+    }
+
+    @keyframes gradient-drift {
+      0% {
+        background-position: 50% 0%;
+      }
+
+      10% {
+        background-position: 25% 20%;
+      }
+
+      25% {
+        background-position: 65% 45%;
+      }
+
+      40% {
+        background-position: 30% 77%;
+      }
+
+      55% {
+        background-position: 75% 55%;
+      }
+
+      70% {
+        background-position: 40% 30%;
+      }
+
+      85% {
+        background-position: 60% 12%;
+      }
+
+      100% {
+        background-position: 50% 0%;
+      }
     }
 
     /* Global smooth theme transitions */

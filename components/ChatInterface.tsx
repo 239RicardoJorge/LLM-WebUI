@@ -344,7 +344,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             )}
 
             {/* Input Glow */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/10 via-white/10 to-blue-500/10 rounded-[2.5rem] blur opacity-0 group-hover:opacity-100 transition duration-1000"></div>
+            <div className="absolute -inset-1 bg-gradient-to-r from-[var(--input-glow)] via-white/10 to-[var(--input-glow)] rounded-[2.5rem] blur opacity-0 group-hover:opacity-100 transition duration-1000"></div>
 
             <div className="relative bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-[2rem] shadow-2xl overflow-hidden flex items-end p-2 transition-all duration-300 focus-within:bg-[var(--bg-primary)] focus-within:border-[var(--text-muted)]">
               <button
