@@ -12,10 +12,47 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root {
+      /* Light Mode - Beige based */
+      --bg-primary: #faf8f5;
+      --bg-secondary: #f0ebe3;
+      --bg-depth: #faf8f5;
+      --bg-glass: rgba(250, 248, 245, 1);
+      --glass-border: rgba(0, 0, 0, 0.06);
+      --glass-surface: rgba(240, 235, 227, 0.6);
+      --text-primary: #2d2d2d;
+      --text-secondary: #3a3a3c;
+      --text-muted: #636366;
+      --border-color: rgba(0, 0, 0, 0.08);
+      --accent-glow: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(180, 140, 100, 0.18) 0%, rgba(250, 248, 245, 0) 60%);
+      --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+      --scrollbar-hover: rgba(0, 0, 0, 0.25);
+      --cpu-bar: #4a4a4a;
+      --indicator-bg: #ffffff;
+      --indicator-border: rgba(0, 0, 0, 0.3);
+      --input-glow: rgba(180, 140, 100, 0.4);
+      --input-hover: #f0ebe3;
+    }
+
+    .dark {
+      /* Dark Mode */
+      --bg-primary: #000000;
+      --bg-secondary: #1c1c1e;
       --bg-depth: #000000;
+      --bg-glass: rgba(28, 28, 30, 0.6);
       --glass-border: rgba(255, 255, 255, 0.08);
       --glass-surface: rgba(28, 28, 30, 0.4);
+      --text-primary: #f5f5f7;
+      --text-secondary: #86868b;
+      --text-muted: #48484a;
+      --border-color: rgba(255, 255, 255, 0.1);
       --accent-glow: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.15) 0%, rgba(0, 0, 0, 0) 50%);
+      --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+      --scrollbar-hover: rgba(255, 255, 255, 0.3);
+      --cpu-bar: #f5f5f7;
+      --indicator-bg: #ffffff;
+      --indicator-border: transparent;
+      --input-glow: rgba(56, 189, 248, 0.4);
+      --input-hover: #0f172a;
     }
 
     body {
@@ -25,11 +62,17 @@
       background-attachment: fixed;
       background-size: 100% 100vh;
       background-repeat: no-repeat;
-      color: #F5F5F7;
+      color: var(--text-primary);
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       overflow: hidden;
-      /* App handles scroll */
+    }
+
+    /* Global smooth theme transitions */
+    *,
+    *::before,
+    *::after {
+      transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease, fill 0.5s ease;
     }
 
     /* Premium Scrollbar */
@@ -42,12 +85,12 @@
     }
 
     ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.2);
+      background: var(--scrollbar-thumb);
       border-radius: 10px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.3);
+      background: var(--scrollbar-hover);
     }
 
     /* Utilities */

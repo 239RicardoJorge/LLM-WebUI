@@ -152,7 +152,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div className="lg:hidden absolute top-4 left-4 z-30">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="p-3 bg-white/10 backdrop-blur-md rounded-full text-white border border-white/10"
+          className="p-3 bg-[var(--bg-glass)] backdrop-blur-md rounded-full text-[var(--text-primary)] border border-[var(--border-color)]"
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -168,15 +168,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <div className="flex flex-col items-center justify-center space-y-6 animate-fade-up">
               {unavailableCode ? (
                 <div className="flex flex-col items-center gap-4 text-center">
-                  <h1 className="text-8xl font-bold font-mono text-white/5 tracking-tighter select-none">
+                  <h1 className="text-8xl font-bold font-mono text-[var(--text-primary)]/5 tracking-tighter select-none">
                     {unavailableCode}
                   </h1>
 
                   <div className="flex flex-col gap-2">
-                    <p className="text-sm font-mono text-gray-500 tracking-[0.2em] uppercase">
+                    <p className="text-sm font-mono text-[var(--text-muted)] tracking-[0.2em] uppercase">
                       Model Unavailable
                     </p>
-                    <p className="text-xs font-mono text-gray-600 tracking-widest uppercase">
+                    <p className="text-xs font-mono text-[var(--text-muted)] tracking-widest uppercase">
                       {unavailableCode === '429' ? 'Rate Limit Exceeded' :
                         unavailableCode === '400' ? 'Invalid Request' :
                           'Connection Failed'}
@@ -217,7 +217,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                 href={url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-4 py-2 rounded-full border border-white/10 bg-white/5 text-xs text-blue-400 hover:text-blue-300 hover:bg-white/10 transition-all flex items-center gap-2"
+                                className="px-4 py-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-glass)] text-xs text-blue-400 hover:text-blue-300 hover:bg-[var(--bg-secondary)] transition-all flex items-center gap-2"
                               >
                                 <span>{label}</span>
                                 <ExternalLink className="w-3 h-3" />
@@ -232,10 +232,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </div>
               ) : (
                 <>
-                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl">
-                    <Terminal className="w-8 h-8 text-white/40" />
+                  <div
+                    className="w-16 h-16 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-color)] flex items-center justify-center shadow-2xl"
+                    style={{ transition: 'background-color 2s ease 0.5s, border-color 0.5s ease' }}
+                  >
+                    <Terminal className="w-8 h-8 text-[var(--text-muted)] transition-colors duration-500" />
                   </div>
-                  <p className="text-sm font-mono text-gray-500 tracking-widest uppercase">
+                  <p className="text-sm font-mono text-[var(--text-muted)] tracking-widest uppercase">
                     System Ready
                   </p>
                 </>
@@ -254,7 +257,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 {msg.role === Role.USER ? (
                   <div className="flex flex-col items-end max-w-[80%]">
                     {msg.attachment && (
-                      <div className="mb-2 rounded-xl overflow-hidden border border-white/10 shadow-lg max-w-[200px]">
+                      <div className="mb-2 rounded-xl overflow-hidden border border-[var(--border-color)] shadow-lg max-w-[200px]">
                         {msg.attachment.mimeType.startsWith('image/') ? (
                           <img
                             src={`data:${msg.attachment.mimeType};base64,${msg.attachment.data}`}
@@ -262,31 +265,31 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                             className="w-full h-auto"
                           />
                         ) : (
-                          <div className="p-4 bg-[#1A1A1A] text-xs text-white/70">
+                          <div className="p-4 bg-[var(--bg-secondary)] text-xs text-[var(--text-secondary)]">
                             {msg.attachment.mimeType}
                           </div>
                         )}
                       </div>
                     )}
                     {msg.content && (
-                      <div className="bg-[#1A1A1A] border border-white/10 rounded-[2rem] px-8 py-5 text-[17px] text-white/90 leading-relaxed shadow-lg break-words hyphens-auto whitespace-pre-wrap">
+                      <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-[2rem] px-8 py-5 text-[17px] text-[var(--text-primary)] leading-relaxed shadow-lg break-words hyphens-auto whitespace-pre-wrap">
                         {msg.content}
                       </div>
                     )}
                   </div>
                 ) : (
                   /* Model Message */
-                  <div className="w-full text-gray-200 pl-4 md:pl-0">
+                  <div className="w-full text-[var(--text-primary)] pl-4 md:pl-0">
                     <div className="flex items-center gap-3 mb-4 opacity-30">
-                      <div className="h-[1px] w-8 bg-white"></div>
+                      <div className="h-[1px] w-8 bg-[var(--text-primary)]"></div>
                       <span className="text-[10px] font-bold tracking-widest uppercase">Response</span>
                     </div>
                     <div className="prose-container break-words hyphens-auto">
                       <Suspense fallback={
                         <div className="space-y-3 animate-pulse">
-                          <div className="h-4 bg-white/10 rounded w-3/4"></div>
-                          <div className="h-4 bg-white/10 rounded w-1/2"></div>
-                          <div className="h-4 bg-white/10 rounded w-5/6"></div>
+                          <div className="h-4 bg-[var(--bg-secondary)] rounded w-3/4"></div>
+                          <div className="h-4 bg-[var(--bg-secondary)] rounded w-1/2"></div>
+                          <div className="h-4 bg-[var(--bg-secondary)] rounded w-5/6"></div>
                         </div>
                       }>
                         <MarkdownRenderer content={msg.content} />
@@ -300,7 +303,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {isLoading && (messages.length === 0 || messages[messages.length - 1].role !== Role.MODEL) && (
               <div className="w-full animate-pulse pl-4 md:pl-0">
                 <div className="flex items-center gap-3 mb-4 opacity-50">
-                  <div className="h-[1px] w-8 bg-white"></div>
+                  <div className="h-[1px] w-8 bg-[var(--text-primary)]"></div>
                   <span className="text-[10px] font-bold tracking-widest uppercase">Thinking</span>
                 </div>
               </div>
@@ -318,8 +321,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
             {/* Attachment Preview - Glass Panel popping up */}
             {attachment && (
-              <div className="absolute bottom-full left-0 mb-4 p-2 bg-[#0d0d0d]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl flex items-center gap-3 animate-fade-up">
-                <div className="w-12 h-12 rounded-lg bg-white/5 overflow-hidden flex items-center justify-center relative">
+              <div className="absolute bottom-full left-0 mb-4 p-2 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-2xl shadow-2xl flex items-center gap-3 animate-fade-up">
+                <div className="w-12 h-12 rounded-lg bg-[var(--bg-secondary)] overflow-hidden flex items-center justify-center relative">
                   {attachment.mimeType.startsWith('image/') ? (
                     <img
                       src={`data:${attachment.mimeType};base64,${attachment.data}`}
@@ -327,15 +330,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       alt="preview"
                     />
                   ) : (
-                    <Paperclip className="w-5 h-5 text-white/50" />
+                    <Paperclip className="w-5 h-5 text-[var(--text-muted)]" />
                   )}
                 </div>
                 <div className="pr-2">
-                  <p className="text-xs text-white max-w-[150px] truncate">{attachment.name || 'File'}</p>
-                  <p className="text-[10px] text-white/50 uppercase tracking-wider">{attachment.mimeType.split('/')[1]}</p>
+                  <p className="text-xs text-[var(--text-primary)] max-w-[150px] truncate">{attachment.name || 'File'}</p>
+                  <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{attachment.mimeType.split('/')[1]}</p>
                 </div>
-                <button onClick={removeAttachment} className="p-1 hover:bg-white/10 rounded-full transition-colors">
-                  <X className="w-4 h-4 text-white/70" />
+                <button onClick={removeAttachment} className="p-1 hover:bg-[var(--bg-secondary)] rounded-full transition-colors">
+                  <X className="w-4 h-4 text-[var(--text-secondary)]" />
                 </button>
               </div>
             )}
@@ -343,11 +346,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {/* Input Glow */}
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/10 via-white/10 to-blue-500/10 rounded-[2.5rem] blur opacity-0 group-hover:opacity-100 transition duration-1000"></div>
 
-            <div className="relative bg-[#0d0d0d]/80 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden flex items-end p-2 transition-all duration-300 focus-within:bg-[#0d0d0d] focus-within:border-white/20">
+            <div className="relative bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-[2rem] shadow-2xl overflow-hidden flex items-end p-2 transition-all duration-300 focus-within:bg-[var(--bg-primary)] focus-within:border-[var(--text-muted)]">
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading}
-                className="m-2 p-3 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors duration-200"
+                className="m-2 p-3 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-200"
               >
                 <Paperclip className="w-5 h-5" />
               </button>
@@ -359,7 +362,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 onKeyDown={handleKeyDown}
                 placeholder="Input command..."
                 rows={1}
-                className="w-full bg-transparent text-lg text-white placeholder-gray-600 px-2 py-4 focus:outline-none resize-none max-h-48"
+                className="w-full bg-transparent text-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] px-2 py-4 focus:outline-none resize-none max-h-48"
                 disabled={isLoading}
               />
 
@@ -369,10 +372,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 className={`
                     m-2 p-3 rounded-full transition-all duration-300 flex-shrink-0
                     ${isLoading
-                    ? 'bg-white text-black hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]'
+                    ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]'
                     : (input.trim() || attachment) && !unavailableCode
-                      ? 'bg-white text-black hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]'
-                      : 'bg-white/5 text-gray-600 cursor-not-allowed'}
+                      ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]'
+                      : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] cursor-not-allowed'}
                     `}
               >
                 {isLoading ? (

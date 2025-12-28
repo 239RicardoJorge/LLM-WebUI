@@ -2,12 +2,32 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
+import ThemeToggle from './components/sidebar/ThemeToggle';
 import { APP_VERSION } from './config/version';
 import { useModelManagement } from './hooks/useModelManagement';
 import { useChatSession } from './hooks/useChatSession';
+import { useSettingsStore } from './store/settingsStore';
 
 const App: React.FC = () => {
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const { theme } = useSettingsStore();
+
+  // Apply theme class on mount and when theme changes
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else if (theme === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      // System: check prefers-color-scheme
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }, [theme]);
 
   useEffect(() => {
     if ('scrollRestoration' in history) {
@@ -65,7 +85,7 @@ const App: React.FC = () => {
 
   return (
     <div ref={wrapperRef} className="flex h-screen w-full relative overflow-hidden">
-      <Toaster position="top-right" theme="dark" richColors closeButton />
+      <Toaster position="top-right" theme={theme === 'dark' ? 'dark' : 'light'} richColors closeButton />
       <Sidebar
         currentModel={currentModel}
         onModelChange={handleModelChange}
@@ -81,9 +101,12 @@ const App: React.FC = () => {
       />
 
       <main className="flex-1 h-full relative z-0">
-        {/* Version Display */}
-        <div className="absolute top-4 right-4 z-50 pointer-events-none opacity-30 select-none text-[10px] font-mono text-white">
-          {APP_VERSION}
+        {/* Top Right: Version + Theme Toggle */}
+        <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
+          <div className="opacity-30 select-none text-[10px] font-mono text-[var(--text-primary)] pointer-events-none">
+            {APP_VERSION}
+          </div>
+          <ThemeToggle />
         </div>
         <ChatInterface
           messages={messages}

@@ -42,29 +42,29 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ mounted }) => {
     }, []);
 
     return (
-        <div className="p-6 bg-black/40 border-t border-white/5 backdrop-blur-xl">
+        <div className="p-6 border-t border-[var(--border-color)]">
             <div className="flex items-center gap-2 mb-4">
                 <Cpu className="w-3 h-3 text-green-500" />
-                <span className="text-[10px] font-bold tracking-widest text-white/60 uppercase">System Status (Host)</span>
+                <span className="text-[10px] font-bold tracking-widest text-[var(--text-secondary)] uppercase">System Status (Host)</span>
             </div>
 
             <div className="space-y-4">
                 {/* CPU Cores Grid */}
                 <div className="space-y-2">
-                    <div className="flex justify-between items-end text-[10px] font-mono text-gray-400">
+                    <div className="flex justify-between items-end text-[10px] font-mono text-[var(--text-secondary)]">
                         <span>CPU LOAD (4 CORES)</span>
                         <span>AVG {Math.round(cpuCores.reduce((a, b) => a + b, 0) / 4)}%</span>
                     </div>
                     <div className="grid grid-cols-4 gap-1 h-8">
                         {cpuCores.map((load, idx) => (
-                            <div key={idx} className="relative bg-white/5 rounded-md overflow-hidden flex items-end group">
+                            <div key={idx} className="relative bg-[var(--bg-secondary)] rounded-md overflow-hidden flex items-end group">
                                 <div
-                                    className={`w-full bg-white/80 ease-out hover:bg-white ${mounted ? 'transition-all duration-1000' : ''}`}
+                                    className={`w-full bg-[var(--cpu-bar)] ease-out ${mounted ? 'transition-all duration-1000' : ''}`}
                                     style={{ height: `${load}%` }}
                                 />
                                 {/* Tooltip for specific core */}
-                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center bg-black/60 transition-opacity">
-                                    <span className="text-[8px] font-mono">{Math.round(load)}%</span>
+                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center bg-[var(--bg-primary)]/60 transition-opacity">
+                                    <span className="text-[8px] font-mono text-[var(--text-primary)]">{Math.round(load)}%</span>
                                 </div>
                             </div>
                         ))}
@@ -73,7 +73,7 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ mounted }) => {
 
                 {/* System RAM Monitor */}
                 <div className="space-y-1.5">
-                    <div className="flex justify-between items-end text-[10px] font-mono text-gray-400">
+                    <div className="flex justify-between items-end text-[10px] font-mono text-[var(--text-secondary)]">
                         <span>SYSTEM RAM USAGE</span>
                         <span>{Math.round(ramUsage)}%</span>
                     </div>

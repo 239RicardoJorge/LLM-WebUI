@@ -104,7 +104,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                     if (!keysExpanded) setAnimateKeys(true);
                     setKeysExpanded(!keysExpanded);
                 }}
-                className="flex items-center gap-2 text-white/40 mb-2 w-full hover:text-white/60 transition-colors"
+                className="flex items-center gap-2 text-[var(--text-secondary)] mb-2 w-full hover:text-[var(--text-primary)] transition-colors"
             >
                 <Key className="w-3 h-3" />
                 <span className="text-[10px] font-bold tracking-widest uppercase flex-1 text-left">Provider Keys</span>
@@ -116,7 +116,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                     {/* Google Key */}
                     <div className="group">
                         <div className="flex justify-between items-center mb-1 pl-1">
-                            <label className="text-[9px] text-gray-500 uppercase tracking-wider">Google Gemini</label>
+                            <label className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">Google Gemini</label>
                             <a href={APP_CONFIG.PROVIDER_URLS.google} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[9px] text-blue-400 hover:text-blue-300 transition-colors">
                                 Get Key <ExternalLink className="w-2.5 h-2.5" />
                             </a>
@@ -127,8 +127,8 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                             onChange={(e) => handleDraftChange('google', e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSaveKeys()}
                             placeholder="AIzaSy..."
-                            className={`w-full bg-black/40 border text-white text-xs p-2.5 rounded-lg focus:outline-none focus:border-blue-500/50 transition-all font-mono
-                 ${highlightKeys && !draftKeys.google ? 'animate-blink-2' : 'border-white/10'}
+                            className={`w-full bg-[var(--bg-secondary)] border text-[var(--text-primary)] text-xs p-2.5 rounded-lg focus:outline-none focus:border-blue-500/50 transition-all font-mono
+                 ${highlightKeys && !draftKeys.google ? 'animate-blink-2' : 'border-[var(--border-color)]'}
               `}
                         />
                     </div>
@@ -136,7 +136,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                     {/* OpenAI Key */}
                     <div className="group">
                         <div className="flex justify-between items-center mb-1 pl-1">
-                            <label className="text-[9px] text-gray-500 uppercase tracking-wider">OpenAI</label>
+                            <label className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">OpenAI</label>
                             <a href={APP_CONFIG.PROVIDER_URLS.openai} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[9px] text-green-400 hover:text-green-300 transition-colors">
                                 Get Key <ExternalLink className="w-2.5 h-2.5" />
                             </a>
@@ -147,8 +147,8 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                             onChange={(e) => handleDraftChange('openai', e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSaveKeys()}
                             placeholder="sk-..."
-                            className={`w-full bg-black/40 border text-white text-xs p-2.5 rounded-lg focus:outline-none focus:border-green-500/50 transition-all font-mono
-                 ${highlightKeys && !draftKeys.openai ? 'animate-blink-2' : 'border-white/10'}
+                            className={`w-full bg-[var(--bg-secondary)] border text-[var(--text-primary)] text-xs p-2.5 rounded-lg focus:outline-none focus:border-green-500/50 transition-all font-mono
+                 ${highlightKeys && !draftKeys.openai ? 'animate-blink-2' : 'border-[var(--border-color)]'}
                `}
                         />
                     </div>
@@ -171,7 +171,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                         flex items-center justify-center w-10 min-w-[2.5rem] rounded-lg border transition-all duration-300
                         ${validationError
                                         ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
-                                        : 'bg-white/10 text-white hover:bg-white/20 border-white/5'}
+                                        : 'bg-[var(--bg-glass)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] border-[var(--border-color)]'}
                         ${isRefreshing ? 'opacity-50 cursor-wait' : ''}
                     `}
                                 title="Refresh Models"
@@ -189,13 +189,13 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                                         ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                                         : validationError
                                             ? 'bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20'
-                                            : 'bg-white/10 text-white hover:bg-white/20 border border-white/5'}
+                                            : 'bg-[var(--bg-glass)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] border border-[var(--border-color)]'}
                         ${isSavingKeys ? 'opacity-50 cursor-wait' : ''}
                             `}
                             >
                                 {isSavingKeys ? (
                                     <>
-                                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <div className="w-3 h-3 border-2 border-[var(--text-muted)] border-t-[var(--text-primary)] rounded-full animate-spin" />
                                         <span>Validating...</span>
                                     </>
                                 ) : isSaved ? (

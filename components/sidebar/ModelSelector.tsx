@@ -40,7 +40,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
             <div className="flex items-center justify-between mb-2 w-full">
                 <button
                     onClick={cycleViewMode}
-                    className="flex items-center gap-2 text-white/40 hover:text-white/60 transition-colors flex-1 w-full"
+                    className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex-1 w-full"
                 >
                     <Settings2 className="w-3 h-3" />
                     <span className={`text-[10px] font-bold tracking-widest uppercase flex-1 text-left ${isRefreshing ? 'animate-pulse' : ''}`}>
@@ -59,10 +59,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                 key={viewMode}
             >
                 {availableModels.length === 0 ? (
-                    <div className="text-center py-6 px-4 border border-dashed border-white/10 rounded-xl bg-white/5">
-                        <p className="text-xs text-gray-400 font-medium">No Models Available</p>
-                        <p className="text-[10px] text-gray-600 mt-2 leading-relaxed">
-                            Insert and <span className="text-white font-semibold">Save</span> an API key above to unlock models.
+                    <div className="text-center py-6 px-4 border border-dashed border-[var(--border-color)] rounded-xl bg-[var(--bg-glass)]">
+                        <p className="text-xs text-[var(--text-secondary)] font-medium">No Models Available</p>
+                        <p className="text-[10px] text-[var(--text-muted)] mt-2 leading-relaxed">
+                            Insert and <span className="text-[var(--text-primary)] font-semibold">Save</span> an API key above to unlock models.
                         </p>
                     </div>
                 ) : (
@@ -84,14 +84,14 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                     className={`
                               w-full p-3 rounded-xl transition-colors duration-300 border text-left group relative overflow-hidden
                               ${isActive
-                                            ? 'bg-white/5 border-white/10 shadow-lg'
-                                            : 'bg-transparent border-white/0 hover:bg-white/5'}
+                                            ? 'bg-[var(--bg-glass)] border-[var(--border-color)] shadow-lg'
+                                            : 'bg-transparent border-transparent hover:bg-[var(--bg-glass)]'}
                               ${isUnavailable ? 'border-red-500/10 bg-red-500/5' : ''}
                           `}
                                 >
                                     <div className="flex items-center justify-between mb-1 relative z-10">
                                         <div className={`flex items-center gap-2 ${isUnavailable ? 'opacity-50 grayscale' : ''}`}>
-                                            <span className={`text-[13px] font-medium tracking-tight ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-300'}`}>
+                                            <span className={`text-[13px] font-medium tracking-tight ${isActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}>
                                                 {model.name}
                                             </span>
                                             {isUnavailable ? (
@@ -103,9 +103,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                                 </>
                                             )}
                                         </div>
-                                        {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
+                                        {isActive && <div className="w-1.5 h-1.5 rounded-full bg-[var(--indicator-bg)] border border-[var(--indicator-border)] shadow-[0_0_8px_var(--indicator-bg)]"></div>}
                                     </div>
-                                    <div className={`text-[10px] truncate ${isActive ? 'text-gray-400' : 'text-gray-700'} ${isUnavailable ? 'opacity-50 grayscale' : ''}`}>
+                                    <div className={`text-[10px] truncate ${isActive ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]'} ${isUnavailable ? 'opacity-50 grayscale' : ''}`}>
                                         {model.description}
                                     </div>
                                 </button>
