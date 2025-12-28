@@ -155,9 +155,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="p-3 bg-[var(--bg-glass)] backdrop-blur-md rounded-full text-[var(--text-primary)] border border-[var(--border-color)]"
+          className="p-3 bg-[var(--bg-glass)] backdrop-blur-md rounded-full text-[var(--text-secondary)] border border-[var(--border-color)]"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-5 h-5 stroke-[var(--text-secondary)]" />
         </button>
       </div>
 
@@ -363,7 +363,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 disabled={isLoading}
                 className="m-2 p-3 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-[background-color,color,border-color,box-shadow,transform] duration-500"
               >
-                <Paperclip className="w-5 h-5" />
+                <Paperclip className="w-5 h-5 stroke-[var(--text-secondary)]" />
               </button>
 
               <textarea
