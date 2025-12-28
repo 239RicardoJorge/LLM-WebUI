@@ -84,7 +84,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                     className={`
                               w-full p-3 rounded-xl border text-left group relative overflow-hidden transition-[background-color,color,border-color,box-shadow,opacity] duration-500
                               ${isActive
-                                            ? 'bg-[var(--bg-glass)] border-[var(--border-color)] shadow-lg'
+                                            ? 'bg-[var(--bg-glass)] border-[var(--border-color)] shadow-lg hover:border-[var(--button-glow)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1),inset_0_0_8px_var(--button-glow)]'
                                             : 'bg-transparent border-transparent hover:bg-[var(--bg-glass)]'}
                               ${isUnavailable ? 'border-red-500/10 bg-red-500/5' : ''}
                           `}

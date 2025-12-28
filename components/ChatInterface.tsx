@@ -27,6 +27,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<Attachment | undefined>(undefined);
+
   // Track initial message count to only animate NEW messages
   const [initialMessageCount] = useState(messages.length);
 
@@ -87,6 +88,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
     }
   }, [input]);
+
+
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -165,18 +168,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div className="max-w-3xl mx-auto pt-24 pb-32 min-h-full flex flex-col justify-center">
 
           {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center space-y-6 animate-fade-up">
+            <div className="flex flex-col items-center justify-center space-y-6">
               {unavailableCode ? (
-                <div className="flex flex-col items-center gap-4 text-center">
-                  <h1 className="text-8xl font-bold font-mono text-[var(--text-primary)]/5 tracking-tighter select-none">
+                <div
+                  key={unavailableCode}
+                  className="flex flex-col items-center gap-4 text-center"
+                  style={{ transition: 'none' }}
+                >
+                  <h1
+                    className="text-8xl font-bold font-mono tracking-tighter select-none bg-clip-text text-transparent"
+                    style={{
+                      backgroundImage: `linear-gradient(135deg, color-mix(in srgb, var(--error-text), transparent 25%), color-mix(in srgb, var(--error-text), transparent 60%))`
+                    }}
+                  >
                     {unavailableCode}
                   </h1>
 
                   <div className="flex flex-col gap-2">
-                    <p className="text-sm font-mono text-[var(--text-muted)] tracking-[0.2em] uppercase">
+                    <p className="text-sm font-mono text-[var(--error-text)] opacity-60 tracking-[0.2em] uppercase">
                       Model Unavailable
                     </p>
-                    <p className="text-xs font-mono text-[var(--text-muted)] tracking-widest uppercase">
+                    <p className="text-xs font-mono text-[var(--error-text)] opacity-60 tracking-widest uppercase">
                       {unavailableCode === '429' ? 'Rate Limit Exceeded' :
                         unavailableCode === '400' ? 'Invalid Request' :
                           'Connection Failed'}
@@ -217,7 +229,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                 href={url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-4 py-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-glass)] text-xs text-blue-400 hover:text-blue-300 hover:bg-[var(--bg-secondary)] transition-all duration-500 flex items-center gap-2"
+                                className="px-4 py-2 rounded-full border border-blue-400/30 bg-blue-500/5 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 hover:border-blue-400/50 transition-colors duration-300 flex items-center gap-2"
                               >
                                 <span>{label}</span>
                                 <ExternalLink className="w-3 h-3" />
@@ -234,9 +246,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <>
                   <div
                     className="w-16 h-16 rounded-2xl bg-[var(--bg-glass)] border border-[var(--border-color)] flex items-center justify-center shadow-2xl"
-                    style={{ transition: 'background-color 2s ease 0.5s, border-color 0.5s ease' }}
                   >
-                    <Terminal className="w-8 h-8 text-[var(--text-muted)]" style={{ transition: 'color 3s ease 1s' }} />
+                    <Terminal className="w-8 h-8 text-[var(--text-muted)]" />
                   </div>
                   <p className="text-sm font-mono text-[var(--text-muted)] tracking-widest uppercase">
                     System Ready
@@ -350,7 +361,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading}
-                className="m-2 p-3 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-500"
+                className="m-2 p-3 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-[background-color,color,border-color,box-shadow,transform] duration-500"
               >
                 <Paperclip className="w-5 h-5" />
               </button>
@@ -370,13 +381,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 onClick={() => isLoading ? onStop() : handleSubmit()}
                 disabled={(!input.trim() && !attachment && !isLoading)}
                 className={`
-                    m-2 p-3 rounded-full transition-all duration-500 flex-shrink-0
+                    m-2 p-3 rounded-full flex items-center justify-center min-w-[3rem] min-h-[3rem] transition-[background-color,color,border-color,box-shadow,transform] duration-500
                     ${isLoading
-                    ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]'
+                    ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:scale-105 hover:shadow-[0_0_20px_var(--input-glow)]'
                     : (input.trim() || attachment) && !unavailableCode
-                      ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]'
-                      : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] cursor-not-allowed'}
+                      ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:scale-105 hover:shadow-[0_0_20px_var(--input-glow)] active:scale-95'
+                      : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] cursor-not-allowed opacity-50'}
                     `}
+                style={{}}
               >
                 {isLoading ? (
                   <Square className="w-5 h-5 fill-current" />

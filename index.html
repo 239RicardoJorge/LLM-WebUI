@@ -31,6 +31,9 @@
       --indicator-border: rgba(0, 0, 0, 0.3);
       --input-glow: rgba(180, 140, 100, 0.1);
       --input-hover: #f0ebe3;
+      --button-hover: #e8e2d8;
+      --error-text: #a89f8f;
+      --button-glow: rgba(180, 140, 100, 0.15);
     }
 
     .dark {
@@ -53,6 +56,10 @@
       --indicator-border: transparent;
       --input-glow: rgba(56, 189, 248, 0.1);
       --input-hover: #0f172a;
+      --button-hover: #2c2c2e;
+      --button-hover: #2c2c2e;
+      --error-text: #666666;
+      --button-glow: rgba(56, 189, 248, 0.15);
     }
 
     body {
@@ -107,8 +114,9 @@
     *,
     *::before,
     *::after {
-      transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), fill 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), fill 0.5s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
+
 
     /* Premium Scrollbar */
     ::-webkit-scrollbar {

@@ -10,20 +10,23 @@ const ThemeToggle: React.FC = () => {
         const newTheme = theme === 'dark' ? 'light' : theme === 'light' ? 'system' : 'dark';
         setTheme(newTheme);
 
-        // Apply theme class to document
+        // Determine if dark mode should be active
+        let shouldBeDark = false;
         if (newTheme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else if (newTheme === 'light') {
-            document.documentElement.classList.remove('dark');
-        } else {
-            // System: check prefers-color-scheme
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (prefersDark) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
+            shouldBeDark = true;
+        } else if (newTheme === 'system') {
+            shouldBeDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         }
+        // newTheme === 'light' -> shouldBeDark stays false
+
+        // Only modify classList if the actual state changes
+        const isDark = document.documentElement.classList.contains('dark');
+        if (shouldBeDark && !isDark) {
+            document.documentElement.classList.add('dark');
+        } else if (!shouldBeDark && isDark) {
+            document.documentElement.classList.remove('dark');
+        }
+        // If shouldBeDark === isDark, do nothing (no flash)
     };
 
     const getIcon = () => {
