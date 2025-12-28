@@ -59,7 +59,7 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ mounted }) => {
                         {cpuCores.map((load, idx) => (
                             <div key={idx} className="relative bg-[var(--bg-secondary)] rounded-md overflow-hidden flex items-end group">
                                 <div
-                                    className={`w-full bg-[var(--cpu-bar)] ${mounted ? 'transition-[height,background-color] duration-[1000ms,500ms] ease-out' : ''}`}
+                                    className={`w-full bg-[var(--cpu-bar)] ${mounted ? 'transition-all duration-500 ease-in-out' : ''}`}
                                     style={{ height: `${load}%` }}
                                 />
                                 {/* Tooltip for specific core */}
@@ -79,7 +79,7 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ mounted }) => {
                     </div>
                     <div className="h-1 w-full bg-blue-500/20 rounded-full overflow-hidden">
                         <div
-                            className={`h-full bg-blue-400 rounded-full shadow-[0_0_10px_rgba(96,165,250,0.3)] ${mounted ? 'transition-[width,background-color] duration-[1000ms,500ms] ease-out' : ''}`}
+                            className={`h-full bg-blue-400 rounded-full shadow-[0_0_10px_rgba(96,165,250,0.3)] ${mounted ? 'transition-all duration-500 ease-in-out' : ''}`}
                             style={{ width: `${ramUsage}%` }}
                         />
                     </div>

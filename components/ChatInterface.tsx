@@ -381,7 +381,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 onClick={() => isLoading ? onStop() : handleSubmit()}
                 disabled={(!input.trim() && !attachment && !isLoading)}
                 className={`
-                    m-2 p-3 rounded-full flex items-center justify-center min-w-[3rem] min-h-[3rem] transition-[background-color,color,border-color,box-shadow,transform] duration-500
+                    m-2 p-3 rounded-full flex items-center justify-center min-w-[3rem] min-h-[3rem] transition-all duration-500
                     ${isLoading
                     ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:scale-105 hover:shadow-[0_0_20px_var(--input-glow)]'
                     : (input.trim() || attachment) && !unavailableCode
