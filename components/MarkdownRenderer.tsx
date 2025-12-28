@@ -30,7 +30,7 @@ const CodeBlock = ({ language, children, className, ...props }: any) => {
         <span className="text-xs font-bold tracking-widest text-[var(--text-muted)] uppercase">{language}</span>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-2 text-[10px] font-medium tracking-wider uppercase text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors duration-500 p-1 rounded-md hover:bg-[var(--bg-glass)]"
+          className="flex items-center gap-2 text-[10px] font-medium tracking-wider uppercase text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 rounded-md hover:bg-[var(--bg-glass)]"
         >
           {isCopied ? (
             <>
@@ -77,7 +77,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
           ul: ({ children }) => <ul className="list-disc pl-4 mb-6 space-y-2 text-[var(--text-primary)] marker:text-[var(--text-muted)]">{children}</ul>,
           ol: ({ children }) => <ol className="list-decimal pl-4 mb-6 space-y-2 text-[var(--text-primary)] marker:text-[var(--text-muted)]">{children}</ol>,
           a: ({ href, children }) => (
-            <a href={href} target="_blank" rel="noopener noreferrer" className="text-[var(--text-primary)] border-b border-[var(--text-muted)] hover:border-[var(--text-primary)] pb-0.5 transition-colors duration-500">
+            <a href={href} target="_blank" rel="noopener noreferrer" className="text-[var(--text-primary)] border-b border-[var(--text-muted)] hover:border-[var(--text-primary)] pb-0.5">
               {children}
             </a>
           ),

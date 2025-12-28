@@ -293,7 +293,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   <div className="w-full text-[var(--text-primary)] pl-4 md:pl-0">
                     <div className="flex items-center gap-3 mb-4 opacity-30">
                       <div className="h-[1px] w-8 bg-[var(--text-primary)]"></div>
-                      <span className="text-[10px] font-bold tracking-widest uppercase">Response</span>
+                      <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-primary)]">Response</span>
                     </div>
                     <div className="prose-container break-words hyphens-auto">
                       <Suspense fallback={

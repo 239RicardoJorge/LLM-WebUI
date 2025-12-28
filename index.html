@@ -114,15 +114,8 @@
     *,
     *::before,
     *::after {
-      transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), fill 0.5s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* SVG elements using currentColor should NOT have their own stroke/fill transition
-       because currentColor already transitions via the parent's color property.
-       Having both causes a "double transition" effect. */
-    svg,
-    svg * {
-      transition: none;
+      -webkit-transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     /* Premium Scrollbar */

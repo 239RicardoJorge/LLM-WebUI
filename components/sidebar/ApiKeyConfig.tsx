@@ -104,7 +104,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                     if (!keysExpanded) setAnimateKeys(true);
                     setKeysExpanded(!keysExpanded);
                 }}
-                className="flex items-center gap-2 text-[var(--text-secondary)] mb-2 w-full hover:text-[var(--text-primary)] transition-colors duration-500"
+                className="flex items-center gap-2 text-[var(--text-secondary)] mb-2 w-full hover:text-[var(--text-primary)]"
             >
                 <Key className="w-3 h-3" />
                 <span className="text-[10px] font-bold tracking-widest uppercase flex-1 text-left">Provider Keys</span>
@@ -117,7 +117,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                     <div className="group">
                         <div className="flex justify-between items-center mb-1 pl-1">
                             <label className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">Google Gemini</label>
-                            <a href={APP_CONFIG.PROVIDER_URLS.google} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[9px] text-blue-400 hover:text-blue-300 transition-colors duration-500">
+                            <a href={APP_CONFIG.PROVIDER_URLS.google} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[9px] text-blue-400 hover:text-blue-300">
                                 Get Key <ExternalLink className="w-2.5 h-2.5" />
                             </a>
                         </div>
@@ -137,7 +137,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                     <div className="group">
                         <div className="flex justify-between items-center mb-1 pl-1">
                             <label className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">OpenAI</label>
-                            <a href={APP_CONFIG.PROVIDER_URLS.openai} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[9px] text-green-400 hover:text-green-300 transition-colors duration-500">
+                            <a href={APP_CONFIG.PROVIDER_URLS.openai} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[9px] text-green-400 hover:text-green-300">
                                 Get Key <ExternalLink className="w-2.5 h-2.5" />
                             </a>
                         </div>
