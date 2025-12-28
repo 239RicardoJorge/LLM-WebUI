@@ -1,10 +1,10 @@
 {
     "name": "CCS - Clear Context System",
-    "short_name": "CCS",
+    "short_name": "CCS - Clear Context System",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#000000",
-    "theme_color": "#000000",
+    "background_color": "#faf8f5",
+    "theme_color": "#faf8f5",
     "icons": [
         {
             "src": "/logo.svg",

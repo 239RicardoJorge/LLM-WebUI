@@ -152,7 +152,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       />
 
       {/* Mobile Toggle */}
-      <div className="lg:hidden absolute top-4 left-4 z-30">
+      <div className="lg:hidden fixed top-4 left-4 z-50">
         <button
           onClick={() => setSidebarOpen(true)}
           className="p-3 bg-[var(--bg-glass)] backdrop-blur-md rounded-full text-[var(--text-primary)] border border-[var(--border-color)]"
@@ -165,7 +165,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div
         className="flex-1 overflow-y-auto px-4 md:px-0"
       >
-        <div className="max-w-3xl mx-auto pt-24 pb-32 min-h-full flex flex-col justify-center">
+        <div className="max-w-3xl mx-auto pt-16 md:pt-24 pb-16 md:pb-32 min-h-full flex flex-col justify-center">
 
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center space-y-6">

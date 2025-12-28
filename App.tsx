@@ -102,7 +102,7 @@ const App: React.FC = () => {
 
       <main className="flex-1 h-full relative z-0">
         {/* Top Right: Version + Theme Toggle */}
-        <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-3">
           <div className="opacity-30 select-none text-[10px] font-mono text-[var(--text-primary)] pointer-events-none">
             {APP_VERSION}
           </div>
