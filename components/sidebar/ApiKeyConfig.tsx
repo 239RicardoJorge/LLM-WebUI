@@ -127,7 +127,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                             onChange={(e) => handleDraftChange('google', e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSaveKeys()}
                             placeholder="AIzaSy..."
-                            className={`w-full bg-[var(--bg-secondary)] border text-[var(--text-primary)] text-xs p-2.5 rounded-lg focus:outline-none focus:border-blue-500/50 transition-all duration-500 font-mono
+                            className={`w-full bg-[var(--bg-secondary)] border text-[var(--text-primary)] text-xs p-2.5 rounded-lg focus:outline-none focus:border-blue-500/50 font-mono
                  ${highlightKeys && !draftKeys.google ? 'animate-blink-2' : 'border-[var(--border-color)]'}
               `}
                         />
@@ -147,7 +147,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                             onChange={(e) => handleDraftChange('openai', e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSaveKeys()}
                             placeholder="sk-..."
-                            className={`w-full bg-[var(--bg-secondary)] border text-[var(--text-primary)] text-xs p-2.5 rounded-lg focus:outline-none focus:border-green-500/50 transition-all duration-500 font-mono
+                            className={`w-full bg-[var(--bg-secondary)] border text-[var(--text-primary)] text-xs p-2.5 rounded-lg focus:outline-none focus:border-green-500/50 font-mono
                  ${highlightKeys && !draftKeys.openai ? 'animate-blink-2' : 'border-[var(--border-color)]'}
                `}
                         />
@@ -156,7 +156,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                     {/* Save Button & Refresh */}
                     <div className="space-y-2">
                         {validationError && (
-                            <div className="text-[10px] text-red-400 bg-red-500/10 border border-red-500/20 p-2 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                            <div className="text-[10px] text-red-400 bg-red-500/10 border border-red-500/20 p-2 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-500">
                                 <span className="flex-1 font-medium">{validationError}</span>
                             </div>
                         )}
@@ -168,7 +168,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                                     if (onRefreshModels) await onRefreshModels();
                                 }}
                                 className={`
-                        flex items-center justify-center w-10 min-w-[2.5rem] rounded-lg border transition-[background-color,color,border-color,opacity,box-shadow] duration-500
+                        flex items-center justify-center w-10 min-w-[2.5rem] rounded-lg border transition-all duration-500
                         ${validationError
                                         ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
                                         : 'bg-[var(--bg-glass)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] hover:border-[var(--button-glow)] hover:shadow-[inset_0_0_8px_var(--button-glow)] border-[var(--border-color)]'}
@@ -183,7 +183,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                             <button
                                 onClick={handleSaveKeys}
                                 disabled={isSavingKeys}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-[background-color,color,border-color,opacity,box-shadow] duration-500
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all duration-500
                                 ${isSaved
                                         ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                                         : validationError

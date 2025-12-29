@@ -63,7 +63,7 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ mounted }) => {
                                     style={{ height: `${load}%` }}
                                 />
                                 {/* Tooltip for specific core */}
-                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center bg-[var(--bg-primary)]/60 transition-[opacity,background-color,color] duration-500">
+                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center bg-[var(--bg-primary)]/60 transition-all duration-500">
                                     <span className="text-[8px] font-mono text-[var(--text-primary)]">{Math.round(load)}%</span>
                                 </div>
                             </div>

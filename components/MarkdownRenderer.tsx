@@ -25,7 +25,7 @@ const CodeBlock = ({ language, children, className, ...props }: any) => {
   };
 
   return (
-    <div className="my-6 rounded-2xl overflow-hidden border border-[var(--border-color)] bg-[var(--bg-secondary)] shadow-2xl group">
+    <div className="my-6 rounded-2xl overflow-hidden border border-[var(--border-color)] bg-[var(--bg-secondary)] shadow-2xl group transition-all duration-500">
       <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-color)] bg-[var(--bg-glass)]">
         <span className="text-xs font-bold tracking-widest text-[var(--text-muted)] uppercase">{language}</span>
         <button
@@ -54,48 +54,53 @@ const CodeBlock = ({ language, children, className, ...props }: any) => {
   );
 };
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
+const remarkPlugins = [remarkGfm, remarkMath];
+const rehypePlugins = [rehypeKatex];
+
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = React.memo(({ content }) => {
+  const components = React.useMemo(() => ({
+    code({ node, inline, className, children, ...props }: any) {
+      const match = /language-(\w+)/.exec(className || '')
+      return !inline && match ? (
+        <CodeBlock language={match[1]} className={className} {...props}>
+          {children}
+        </CodeBlock>
+      ) : (
+        <code className="bg-[var(--bg-secondary)] text-[var(--text-primary)] px-2 py-0.5 rounded-md text-[0.9em] font-medium border border-[var(--border-color)] transition-all duration-500" {...props}>
+          {children}
+        </code>
+      )
+    },
+    p: ({ children }: any) => <p className="mb-6 last:mb-0 leading-8 text-[17px] font-light tracking-wide text-[var(--text-primary)] transition-colors duration-500">{children}</p>,
+    ul: ({ children }: any) => <ul className="list-disc pl-4 mb-6 space-y-2 text-[var(--text-primary)] marker:text-[var(--text-muted)]">{children}</ul>,
+    ol: ({ children }: any) => <ol className="list-decimal pl-4 mb-6 space-y-2 text-[var(--text-primary)] marker:text-[var(--text-muted)]">{children}</ol>,
+    a: ({ href, children }: any) => (
+      <a href={href} target="_blank" rel="noopener noreferrer" className="text-[var(--text-primary)] border-b border-[var(--text-muted)] hover:border-[var(--text-primary)] pb-0.5">
+        {children}
+      </a>
+    ),
+    blockquote: ({ children }: any) => (
+      <blockquote className="border-l border-[var(--text-muted)] pl-6 italic text-[var(--text-secondary)] my-8 transition-colors duration-500">
+        {children}
+      </blockquote>
+    ),
+    h1: ({ children }: any) => <h1 className="text-3xl font-semibold mb-6 mt-8 text-[var(--text-primary)] tracking-tight transition-colors duration-500">{children}</h1>,
+    h2: ({ children }: any) => <h2 className="text-2xl font-semibold mb-4 mt-8 text-[var(--text-primary)] tracking-tight transition-colors duration-500">{children}</h2>,
+    h3: ({ children }: any) => <h3 className="text-xl font-medium mb-3 mt-6 text-[var(--text-primary)] tracking-tight transition-colors duration-500">{children}</h3>,
+    strong: ({ children }: any) => <strong className="font-semibold text-[var(--text-primary)] transition-colors duration-500">{children}</strong>
+  }), []);
+
   return (
     <div className="prose prose-lg max-w-none text-[var(--text-primary)]">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
-        components={{
-          code({ node, inline, className, children, ...props }: any) {
-            const match = /language-(\w+)/.exec(className || '')
-            return !inline && match ? (
-              <CodeBlock language={match[1]} className={className} {...props}>
-                {children}
-              </CodeBlock>
-            ) : (
-              <code className="bg-[var(--bg-secondary)] text-[var(--text-primary)] px-2 py-0.5 rounded-md text-[0.9em] font-medium border border-[var(--border-color)]" {...props}>
-                {children}
-              </code>
-            )
-          },
-          p: ({ children }) => <p className="mb-6 last:mb-0 leading-8 text-[17px] font-light tracking-wide text-[var(--text-primary)]">{children}</p>,
-          ul: ({ children }) => <ul className="list-disc pl-4 mb-6 space-y-2 text-[var(--text-primary)] marker:text-[var(--text-muted)]">{children}</ul>,
-          ol: ({ children }) => <ol className="list-decimal pl-4 mb-6 space-y-2 text-[var(--text-primary)] marker:text-[var(--text-muted)]">{children}</ol>,
-          a: ({ href, children }) => (
-            <a href={href} target="_blank" rel="noopener noreferrer" className="text-[var(--text-primary)] border-b border-[var(--text-muted)] hover:border-[var(--text-primary)] pb-0.5">
-              {children}
-            </a>
-          ),
-          blockquote: ({ children }) => (
-            <blockquote className="border-l border-[var(--text-muted)] pl-6 italic text-[var(--text-secondary)] my-8">
-              {children}
-            </blockquote>
-          ),
-          h1: ({ children }) => <h1 className="text-3xl font-semibold mb-6 mt-8 text-[var(--text-primary)] tracking-tight">{children}</h1>,
-          h2: ({ children }) => <h2 className="text-2xl font-semibold mb-4 mt-8 text-[var(--text-primary)] tracking-tight">{children}</h2>,
-          h3: ({ children }) => <h3 className="text-xl font-medium mb-3 mt-6 text-[var(--text-primary)] tracking-tight">{children}</h3>,
-          strong: ({ children }) => <strong className="font-semibold text-[var(--text-primary)]">{children}</strong>
-        }}
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={rehypePlugins}
+        components={components}
       >
         {content}
       </ReactMarkdown>
     </div>
   );
-};
+});
 
 export default MarkdownRenderer;
