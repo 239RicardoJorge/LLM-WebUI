@@ -4,6 +4,7 @@ import si from 'systeminformation';
 import dotenv from 'dotenv'; // Added
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import rateLimit from 'express-rate-limit';
 
 dotenv.config();
 
@@ -13,8 +14,25 @@ const PORT = process.env.PORT || 3001; // Backend Port
 app.use(cors());
 app.use(express.json());
 
+// Rate Limiters (per endpoint)
+const chatLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 30, // 30 requests per minute
+    message: { error: 'Too many chat requests. Please wait a moment.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+const statusLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 120, // 120 requests per minute (2 per second)
+    message: { error: 'Too many status requests.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 // API Endpoint for System Stats
-app.get('/api/status', async (req, res) => {
+app.get('/api/status', statusLimiter, async (req, res) => {
     try {
         const [cpu, mem] = await Promise.all([
             si.currentLoad(),
@@ -39,7 +57,7 @@ app.get('/api/status', async (req, res) => {
 });
 
 // API Proxy Endpoint
-app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', chatLimiter, async (req, res) => {
     const { provider, model, messages, ...rest } = req.body;
     const apiKey = req.headers['x-api-key'] || process.env.API_KEY;
 

@@ -39,11 +39,53 @@ export const useChatSession = ({
     const [isLoading, setIsLoading] = useState(false);
     const serviceRef = useRef<UnifiedService | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const messagesRef = useRef(messages); // Keep ref in sync for beforeunload
 
-    // Persist messages
+    // Keep messagesRef in sync
     useEffect(() => {
-        localStorage.setItem(APP_CONFIG.STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(messages));
+        messagesRef.current = messages;
     }, [messages]);
+
+    // Flush function - saves immediately
+    const flushMessages = () => {
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+            debounceTimeoutRef.current = null;
+        }
+        localStorage.setItem(APP_CONFIG.STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(messagesRef.current));
+    };
+
+    // Debounced persist (2000ms)
+    useEffect(() => {
+        // Clear any existing timeout
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+        }
+        // Schedule new write
+        debounceTimeoutRef.current = setTimeout(() => {
+            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(messages));
+            debounceTimeoutRef.current = null;
+        }, 2000);
+
+        return () => {
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
+        };
+    }, [messages]);
+
+    // Flush on page unload
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            flushMessages();
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            flushMessages(); // Also flush on unmount
+        };
+    }, []);
 
     // Update Service Instance
     const activeModelDef = availableModels.find(m => m.id === currentModel);
