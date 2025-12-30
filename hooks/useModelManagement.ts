@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { ModelOption } from '../types';
 import { UnifiedService } from '../services/geminiService';
@@ -8,6 +8,7 @@ import { APP_CONFIG } from '../config/constants';
 export const useModelManagement = () => {
     const { apiKeys } = useSettingsStore();
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const refreshIdRef = useRef(0); // Abort pattern: track current refresh ID
 
     const [currentModel, setCurrentModel] = useState(() => {
         return localStorage.getItem(APP_CONFIG.STORAGE_KEYS.CURRENT_MODEL) || '';
@@ -49,6 +50,9 @@ export const useModelManagement = () => {
     // keys parameter allows passing fresh keys directly (avoids race condition after save)
     // silent = true: no toasts, no spinner animation (used by Save Config)
     const refreshModels = async (manual = false, full = false, keys?: { google?: string; openai?: string }, silent = false) => {
+        // Abort pattern: increment ID and capture for this execution
+        const thisRefreshId = ++refreshIdRef.current;
+
         const googleKey = (keys?.google ?? apiKeys.google)?.trim() || '';
         const openaiKey = (keys?.openai ?? apiKeys.openai)?.trim() || '';
 
@@ -85,6 +89,13 @@ export const useModelManagement = () => {
 
             const allModels = [...(googleModels as ModelOption[]), ...(openaiModels as ModelOption[])];
 
+            // Abort check after fetch
+            if (refreshIdRef.current !== thisRefreshId) return;
+
+            // IMMEDIATELY store all models (UI shows full list right away)
+            setAvailableModels(allModels);
+            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AVAILABLE_MODELS, JSON.stringify(allModels));
+
             // 3. Determine Verification Scope (Smart vs Full)
             let modelsToVerify = allModels;
 
@@ -98,15 +109,33 @@ export const useModelManagement = () => {
                 });
             }
 
+            // PESSIMISTIC: Mark all models to verify as 'pending' (unavailable until proven otherwise)
+            const pendingUnavailable: Record<string, string> = {};
+            const pendingErrors: Record<string, string> = {};
+            modelsToVerify.forEach(m => {
+                pendingUnavailable[m.id] = 'pending';
+                pendingErrors[m.id] = 'Verifying...';
+            });
+
+            // Merge with existing unavailable (keep models we're not re-verifying)
+            setUnavailableModels(prev => ({ ...prev, ...pendingUnavailable }));
+            setUnavailableModelErrors(prev => ({ ...prev, ...pendingErrors }));
+
             // 4. Background Verification
-            const currentUnavailableModels: Record<string, string> = { ...prevUnavailable }; // Start with previous
-            const currentUnavailableErrors: Record<string, string> = { ...unavailableModelErrors };
+            const currentUnavailableModels: Record<string, string> = { ...prevUnavailable, ...pendingUnavailable };
+            const currentUnavailableErrors: Record<string, string> = { ...unavailableModelErrors, ...pendingErrors };
+
+            // Track if we've already selected a default in this refresh
+            let defaultSelectedInThisRefresh = !!(currentModel && !currentUnavailableModels[currentModel]);
 
             const verifyPromises = modelsToVerify.map(async (m) => {
                 const key = m.provider === 'google' ? googleKey : openaiKey;
                 if (!key) return;
 
                 const result = await UnifiedService.checkModelAvailability(m.provider, m.id, key);
+
+                // Abort check: if a newer refresh started, skip this update
+                if (refreshIdRef.current !== thisRefreshId) return;
 
                 if (!result.available) {
                     const finalCode = result.errorCode === '429' ? '429' : '400';
@@ -131,17 +160,23 @@ export const useModelManagement = () => {
                         delete next[m.id];
                         return next;
                     });
+
+                    // IMMEDIATE DEFAULT: Select ONLY if no default has been selected yet
+                    if (!defaultSelectedInThisRefresh) {
+                        defaultSelectedInThisRefresh = true;
+                        setCurrentModel(m.id);
+                    }
                 }
             });
 
             await Promise.all(verifyPromises);
 
-            // 5. Store ALL Models (let UI handle filtering by unavailableModels)
-            setAvailableModels(allModels);
-            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.AVAILABLE_MODELS, JSON.stringify(allModels));
+            // Abort check: if a newer refresh started, skip all final updates
+            if (refreshIdRef.current !== thisRefreshId) {
+                return;
+            }
 
-
-            // 6. Calculate Stats for Toasts
+            // 5. Calculate Stats for Toasts
             const actuallyAvailableModels = allModels.filter(m => !currentUnavailableModels[m.id]);
             const newAvailableIds = actuallyAvailableModels.map(m => m.id);
 
@@ -150,7 +185,7 @@ export const useModelManagement = () => {
             const availableCount = actuallyAvailableModels.length;
 
 
-            // 7. Toasts (skip if silent)
+            // 6. Toasts (skip if silent)
             if (!silent) {
                 if (availableCount === 0) {
                     if (manual) toast.error("No models available. Check API keys or Quota.", { duration: 2000 });
@@ -170,20 +205,14 @@ export const useModelManagement = () => {
                 }
             }
 
-            // Auto-Select Logic
-            const firstValid = actuallyAvailableModels.find(m => !currentUnavailableModels[m.id]);
-
-            if (firstValid) {
-                if (!currentModel || currentUnavailableModels[currentModel]) {
-                    setCurrentModel(firstValid.id);
-                }
-            }
-
         } catch (error) {
             console.error("Model Refresh Error", error);
             if (manual) toast.error("Failed to refresh models");
         } finally {
-            setIsRefreshing(false);
+            // Only reset refreshing if this is still the current refresh
+            if (refreshIdRef.current === thisRefreshId) {
+                setIsRefreshing(false);
+            }
         }
     };
 
