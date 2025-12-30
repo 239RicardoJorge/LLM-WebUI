@@ -210,6 +210,14 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                                 )}
                             </button>
                         </div>
+
+                        {/* Privacy Tagline */}
+                        <div className="text-center pt-4">
+                            <p className="text-[9px] text-[var(--text-primary)] uppercase tracking-widest opacity-40 leading-loose">
+                                Your keys. Your data.<br />
+                                Everything local.
+                            </p>
+                        </div>
                     </div>
                 </div>
             )}

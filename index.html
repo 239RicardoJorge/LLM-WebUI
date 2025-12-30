@@ -9,6 +9,30 @@
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="apple-touch-icon" href="/logo.svg" />
   <link rel="apple-touch-icon" href="/logo.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&display=swap" rel="stylesheet">
+
+  <!-- Prevent theme flash: Apply dark class BEFORE any rendering -->
+  <script>
+    (function () {
+      try {
+        var settings = localStorage.getItem('app_settings');
+        if (settings) {
+          var parsed = JSON.parse(settings);
+          var theme = parsed.state?.theme || parsed.theme;
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else if (theme === 'system') {
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              document.documentElement.classList.add('dark');
+            }
+          }
+        }
+      } catch (e) { }
+    })();
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root {
