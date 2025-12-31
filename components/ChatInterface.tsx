@@ -21,7 +21,6 @@ interface ChatInterfaceProps {
   setSidebarOpen: (open: boolean) => void;
   unavailableCode?: string;
   unavailableMessage?: string;
-  onToggleThumbnailContext?: (messageId: string) => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -32,8 +31,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   sidebarOpen,
   setSidebarOpen,
   unavailableCode,
-  unavailableMessage,
-  onToggleThumbnailContext
+  unavailableMessage
 }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<Attachment | undefined>(undefined);
@@ -304,45 +302,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         {/* Visual media (images/videos) with thumbnails */}
                         {(msg.attachment.thumbnail || (msg.attachment.mimeType.startsWith('image/') && msg.attachment.data)) ? (
                           <div className="flex gap-2 mb-2">
-                            {/* Toggle Context Indicator - Always visible to allow user control */}
-                            <div className="flex items-start">
-                              <button
-                                onClick={() => {
-                                  if (msg.attachment?.thumbnail && msg.attachment.mimeType.startsWith('image/')) {
-                                    onToggleThumbnailContext?.(msg.id);
-                                    // Toast handled by state change effect or let user see visual change
-                                    if (msg.attachment.isActive === false) {
-                                      toast.success('Thumbnail activated as approximate context.');
-                                    } else {
-                                      toast.info('Thumbnail removed from context.');
-                                    }
-                                  } else {
-                                    toast.info('Media no longer in context. Refresh cleared the original file from memory.');
-                                  }
-                                }}
-                                className={`flex-shrink-0 transition-all duration-300 cursor-pointer p-1 rounded-full ${msg.attachment.isActive === false
-                                    ? 'text-[var(--text-muted)] opacity-60 hover:opacity-100 hover:text-[var(--error-text)]'
-                                    : 'text-green-500 opacity-60 hover:opacity-100 hover:text-green-400'
-                                  }`}
-                                style={{
-                                  marginTop: msg.attachment.dimensions
-                                    ? `${Math.min(msg.attachment.dimensions.height / msg.attachment.dimensions.width * 200, 200) / 2 - 8}px`
-                                    : '50px'
-                                }}
-                                title={msg.attachment.isActive === false ? "Activate Context" : "Deactivate Context"}
-                              >
-                                {msg.attachment.isActive === false ? (
-                                  <AlertTriangle className="w-4 h-4" />
-                                ) : (
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check-circle-2"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>
-                                )}
-                              </button>
-                            </div>
-
-                            {/* Card with thumbnail + description */}
                             {/* Card with thumbnail + description */}
                             <div
-                              className={`rounded-2xl overflow-hidden border border-[var(--border-color)] shadow-lg max-w-[200px] bg-[var(--bg-primary)]/90 backdrop-blur-2xl ${msg.attachment.isActive === false && !msg.attachment.data ? 'opacity-50' : ''} ${msg.attachment.data || msg.attachment.thumbnail ? 'cursor-pointer' : ''}`}
+                              className={`rounded-2xl overflow-hidden border border-[var(--border-color)] shadow-lg max-w-[200px] bg-[var(--bg-primary)]/90 backdrop-blur-2xl cursor-pointer`}
                               onClick={async () => {
                                 const src = msg.attachment?.thumbnail || (msg.attachment?.data ? `data:${msg.attachment.mimeType};base64,${msg.attachment.data}` : null);
                                 if (src) {
@@ -381,7 +343,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                 <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-0.5">
                                   {msg.attachment.mimeType.split('/')[1]}
                                   {/* Show thumbnail size if using thumbnail/inactive, otherwise original size */}
-                                  {(msg.attachment.isActive === false && msg.attachment.thumbnail)
+                                  {(msg.attachment.thumbnail && !msg.attachment.data)
                                     ? ` • ${formatFileSize(Math.round(msg.attachment.thumbnail.length * 0.75))} (thumb)`
                                     : (msg.attachment.size && ` • ${formatFileSize(msg.attachment.size)}`)
                                   }
@@ -393,18 +355,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         ) : (
                           /* Non-visual files (PDF, audio, docs) - compact bubble */
                           <div className="flex items-center gap-2 mb-2">
-                            {/* Inactive indicator */}
+                            {/* Inactive indicator (Danger Icon) for persisted files with no data */}
                             {msg.attachment.isActive === false && (
-                              <button
-                                onClick={() => toast.info('Media no longer in context. Refresh cleared the original file from memory.')}
-                                className="flex-shrink-0 text-[var(--text-muted)] opacity-40 hover:opacity-70 transition-opacity cursor-pointer"
-                              >
+                              <div className="flex-shrink-0 text-[var(--error-text)] opacity-60" title="File data not persisted">
                                 <AlertTriangle className="w-4 h-4" />
-                              </button>
+                              </div>
                             )}
 
                             <div
-                              className={`p-2 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-2xl shadow-lg flex items-center gap-3 max-w-[280px] ${msg.attachment.isActive === false ? 'opacity-50' : ''} ${msg.attachment.data ? 'cursor-pointer' : ''}`}
+                              className={`p-2 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-2xl shadow-lg flex items-center gap-3 max-w-[280px] ${msg.attachment.isActive === false ? 'opacity-50 grayscale' : ''} ${msg.attachment.data ? 'cursor-pointer' : ''}`}
                               onClick={async () => {
                                 if (msg.attachment?.data) {
                                   try {
@@ -415,6 +374,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                   } catch (e) {
                                     console.error("Failed to open file", e);
                                   }
+                                } else if (msg.attachment.isActive === false) {
+                                  toast.info('File not found in context (cleaned up).');
                                 }
                               }}
                             >

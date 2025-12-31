@@ -65,36 +65,29 @@ export const saveMessages = async (conversationId: string, messages: any[]): Pro
         const store = transaction.objectStore(STORE_CONVERSATIONS);
 
         // Strip attachment data before saving (only keep thumbnail + metadata)
+        // Strip attachment data before saving (only keep thumbnail + metadata)
+        // Strip attachment data before saving (only keep thumbnail + metadata)
         const messagesForStorage = messages.map(msg => {
             if (msg.attachment) {
-                // Determine if we should preserve isActive
-                // Logic:
-                // 1. If we are using the Original File (data != thumbnail), it should NOT persist as active. 
-                //    (User rule: "Original exits context on refresh")
-                // 2. If we are using the Thumbnail (data == thumbnail), it SHOULD persist as active.
-                //    (User rule: "Persistence is only about the thumb")
+                // User Rule: 
+                // 1. Images (thumbnails): Persist as ACTIVE (isActive=true).
+                // 2. Non-Images: Persist as INACTIVE (isActive=false) and remove DATA. 
+                //    (Metadata kept for history, but file is "dead")
 
-                const { data, ...attachmentMeta } = msg.attachment;
-                let shouldPersistActive = msg.attachment.isActive;
-
-                // If currently active with data, check source
-                if (msg.attachment.isActive && msg.attachment.data && msg.attachment.thumbnail) {
-                    try {
-                        const thumbData = msg.attachment.thumbnail.split(',')[1];
-                        // If data is NOT the thumbnail (meaning it's the original), inactive on save
-                        if (msg.attachment.data !== thumbData) {
-                            shouldPersistActive = false;
-                        }
-                    } catch (e) {
-                        // Fallback: if error parsing, safer to set inactive
-                        shouldPersistActive = false;
-                    }
+                if (msg.attachment.mimeType.startsWith('image/')) {
+                    const { data, ...attachmentMeta } = msg.attachment;
+                    return {
+                        ...msg,
+                        attachment: { ...attachmentMeta, isActive: true }
+                    };
+                } else {
+                    // Non-images: Keep metadata, STRIP data, set INACTIVE
+                    const { data, ...attachmentMeta } = msg.attachment;
+                    return {
+                        ...msg,
+                        attachment: { ...attachmentMeta, isActive: false }
+                    };
                 }
-
-                return {
-                    ...msg,
-                    attachment: { ...attachmentMeta, isActive: shouldPersistActive }
-                };
             }
             return msg;
         });
@@ -213,24 +206,28 @@ export const migrateFromLocalStorage = async (oldKey: string, conversationId: st
 export const saveMessagesSync = (conversationId: string, messages: any[]): void => {
     // Use localStorage for immediate sync save (beforeunload fallback)
     // CRITICAL: Strip attachment data to prevent quota errors and ensure originals are not persisted
+    // CRITICAL: Strip attachment data to prevent quota errors and ensure originals are not persisted
+    // CRITICAL: Strip attachment data to prevent quota errors and ensure originals are not persisted
     const stripped = messages.map(msg => {
         if (msg.attachment) {
-            // Determine isActive state using the same logic as saveMessages
-            let shouldPersistActive = msg.attachment.isActive;
-            if (msg.attachment.isActive && msg.attachment.data && msg.attachment.thumbnail) {
-                try {
-                    const thumbData = msg.attachment.thumbnail.split(',')[1];
-                    if (msg.attachment.data !== thumbData) {
-                        shouldPersistActive = false;
-                    }
-                } catch (e) { shouldPersistActive = false; }
-            }
+            // User Rule: 
+            // 1. Images (thumbnails): Persist as ACTIVE (isActive=true).
+            // 2. Non-Images: Persist as INACTIVE (isActive=false) and remove DATA.
 
-            const { data, ...attachmentMeta } = msg.attachment;
-            return {
-                ...msg, // Keep other properties
-                attachment: { ...attachmentMeta, isActive: shouldPersistActive }
-            };
+            if (msg.attachment.mimeType.startsWith('image/')) {
+                const { data, ...attachmentMeta } = msg.attachment;
+                return {
+                    ...msg,
+                    attachment: { ...attachmentMeta, isActive: true }
+                };
+            } else {
+                // Non-images: Keep metadata, STRIP data, set INACTIVE
+                const { data, ...attachmentMeta } = msg.attachment;
+                return {
+                    ...msg,
+                    attachment: { ...attachmentMeta, isActive: false }
+                };
+            }
         }
         return msg;
     });

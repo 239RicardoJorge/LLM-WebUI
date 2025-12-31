@@ -65,30 +65,34 @@ export const useChatSession = ({
             }
 
             // Restore implicit data for active attachments (persistence restoration)
+            // Restore implicit data for active attachments (persistence restoration)
             const processed = loaded.map((msg: ChatMessage) => {
-                // Check if attachment exists and is an image
-                if (msg.attachment && msg.attachment.mimeType.startsWith('image/')) {
-                    // CRITICAL: Respect the persisted 'isActive' state.
-                    // If isActive is explicitly false, we do NOT restore data.
-                    // If isActive is true (or undefined for legacy), we restore from thumbnail.
-                    const shouldRestore = msg.attachment.isActive !== false;
-
-                    // If we should restore, but have no data (expected from storage), AND have a thumbnail
-                    if (shouldRestore && !msg.attachment.data && msg.attachment.thumbnail) {
-                        try {
-                            const thumbnailBase64 = msg.attachment.thumbnail.split(',')[1];
-                            return {
-                                ...msg,
-                                attachment: {
-                                    ...msg.attachment,
-                                    isActive: true, // Confirm it's active
-                                    data: thumbnailBase64
-                                }
-                            };
-                        } catch (e) {
-                            console.error('Failed to restore thumbnail context:', e);
-                            return msg;
+                // If attachment exists...
+                if (msg.attachment) {
+                    // Check if it is an image
+                    if (msg.attachment.mimeType.startsWith('image/')) {
+                        // Restore thumbnail to data if data is missing
+                        if (!msg.attachment.data && msg.attachment.thumbnail) {
+                            try {
+                                const thumbnailBase64 = msg.attachment.thumbnail.split(',')[1];
+                                return {
+                                    ...msg,
+                                    attachment: {
+                                        ...msg.attachment,
+                                        isActive: true, // Always active for thumbs
+                                        data: thumbnailBase64
+                                    }
+                                };
+                            } catch (e) {
+                                console.error('Failed to restore thumbnail context:', e);
+                                return msg;
+                            }
                         }
+                    } else {
+                        // Non-image attachments:
+                        // They are Active=False and Data is stripped in storage.
+                        // We just pass them through so UI can show the "greyed out" metadata.
+                        return msg;
                     }
                 }
                 return msg;
@@ -326,39 +330,7 @@ export const useChatSession = ({
         return true;
     };
 
-    /**
-     * Toggle thumbnail as context for a specific message
-     * For images: activates thumbnail as approximate context or deactivates it
-     */
-    const toggleThumbnailContext = (messageId: string) => {
-        setMessages(prev => prev.map(msg => {
-            if (msg.id !== messageId || !msg.attachment) return msg;
 
-            const attachment = msg.attachment;
-
-            // Only works for images with thumbnails
-            if (!attachment.thumbnail || !attachment.mimeType.startsWith('image/')) {
-                return msg;
-            }
-
-            // Extract base64 from thumbnail data URL (remove "data:image/jpeg;base64," prefix)
-            const thumbnailBase64 = attachment.thumbnail.split(',')[1];
-
-            // Determine new state (toggle current)
-            // Default to true if undefined, so we toggle to false
-            const currentIsActive = attachment.isActive !== false;
-            const newIsActive = !currentIsActive;
-
-            return {
-                ...msg,
-                attachment: {
-                    ...attachment,
-                    isActive: newIsActive,
-                    data: newIsActive ? thumbnailBase64 : undefined
-                }
-            };
-        }));
-    };
 
     return {
         messages,
@@ -367,7 +339,6 @@ export const useChatSession = ({
         isHydrating,
         handleSendMessage,
         handleStopGeneration,
-        handleClearChat,
-        toggleThumbnailContext
+        handleClearChat
     };
 };

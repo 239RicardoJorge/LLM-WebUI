@@ -66,7 +66,7 @@ const App: React.FC = () => {
     handleSendMessage,
     handleStopGeneration,
     handleClearChat,
-    toggleThumbnailContext
+
   } = useChatSession({
     currentModel,
     availableModels,
@@ -118,7 +118,7 @@ const App: React.FC = () => {
           setSidebarOpen={setSidebarOpen}
           unavailableCode={unavailableModels[currentModel]}
           unavailableMessage={unavailableModelErrors[currentModel]}
-          onToggleThumbnailContext={toggleThumbnailContext}
+
         />
       </main>
     </div>
