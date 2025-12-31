@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, ChevronRight, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface MarkdownRendererProps {
@@ -58,6 +58,12 @@ const remarkPlugins = [remarkGfm, remarkMath];
 const rehypePlugins = [rehypeKatex];
 
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = React.memo(({ content }) => {
+  // Parse for <think> tags (Common in DeepSeek/CoT models)
+  const thinkMatch = content.match(/<think>([\s\S]*?)<\/think>/);
+  const thought = thinkMatch ? thinkMatch[1].trim() : null;
+  const cleanContent = content.replace(/<think>[\s\S]*?<\/think>/, '').trim();
+  const [isThinkingOpen, setIsThinkingOpen] = useState(false);
+
   const components = React.useMemo(() => ({
     code({ node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || '')
@@ -92,12 +98,36 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = React.memo(({ content 
 
   return (
     <div className="prose prose-lg max-w-none text-[var(--text-primary)]">
+      {thought && (
+        <div className="mb-6 group">
+          <button
+            onClick={() => setIsThinkingOpen(!isThinkingOpen)}
+            className="flex items-center gap-3 opacity-30 cursor-pointer w-full pl-4 select-none"
+          >
+            <div className="h-[1px] w-4 bg-[var(--text-primary)]"></div>
+            <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-primary)]">Thought Process</span>
+            {isThinkingOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          </button>
+
+          {isThinkingOpen && (
+            <div className="ml-4 pl-6 border-l border-[var(--text-primary)] text-sm text-[var(--text-primary)] italic leading-relaxed whitespace-pre-wrap animate-fade-in opacity-30 pt-2 pb-2">
+              {thought}
+            </div>
+          )}
+        </div>
+      )}
       <ReactMarkdown
         remarkPlugins={remarkPlugins}
         rehypePlugins={rehypePlugins}
         components={components}
       >
-        {content}
+        {
+          (cleanContent || content)
+            .replace(/\\\[/g, '$$$$') // Replace \[ with $$ (for block math)
+            .replace(/\\\]/g, '$$$$') // Replace \] with $$ 
+            .replace(/\\\(/g, '$$')   // Replace \( with $  (for inline math)
+            .replace(/\\\)/g, '$$')   // Replace \) with $
+        }
       </ReactMarkdown>
     </div>
   );

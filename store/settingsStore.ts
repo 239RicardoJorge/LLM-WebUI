@@ -17,7 +17,7 @@ export const useSettingsStore = create<SettingsState>()(
         (set) => ({
             apiKeys: {
                 google: '',
-                openai: '',
+                groq: '',
             },
             setApiKeys: (keys) => set({ apiKeys: keys }),
             setApiKey: (provider, key) =>

@@ -10,7 +10,7 @@ interface ApiKeyConfigProps {
     highlightKeys?: boolean;
     onRefreshModels?: () => Promise<void>;
     isRefreshing?: boolean;
-    onSaveConfig?: (keys: { google?: string; openai?: string }) => Promise<void>;
+    onSaveConfig?: (keys: { google?: string; groq?: string }) => Promise<void>;
 }
 
 const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
@@ -66,8 +66,8 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                 await UnifiedService.validateKeyAndGetModels('google', draftKeys.google);
                 validCount++;
             }
-            if (draftKeys.openai) {
-                await UnifiedService.validateKeyAndGetModels('openai', draftKeys.openai);
+            if (draftKeys.groq) {
+                await UnifiedService.validateKeyAndGetModels('groq', draftKeys.groq);
                 validCount++;
             }
 
@@ -133,22 +133,22 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                         />
                     </div>
 
-                    {/* OpenAI Key */}
+                    {/* Groq Key */}
                     <div className="group">
                         <div className="flex justify-between items-center mb-1 pl-1">
-                            <label className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">OpenAI</label>
-                            <a href={APP_CONFIG.PROVIDER_URLS.openai} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[9px] text-green-400 hover:text-green-300">
+                            <label className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">Groq Cloud</label>
+                            <a href={APP_CONFIG.PROVIDER_URLS.groq} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[9px] text-orange-400 hover:text-orange-300">
                                 Get Key <ExternalLink className="w-2.5 h-2.5" />
                             </a>
                         </div>
                         <input
                             type="password"
-                            value={draftKeys.openai}
-                            onChange={(e) => handleDraftChange('openai', e.target.value)}
+                            value={draftKeys.groq}
+                            onChange={(e) => handleDraftChange('groq', e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSaveKeys()}
-                            placeholder="sk-..."
-                            className={`w-full bg-[var(--bg-secondary)] border text-[var(--text-primary)] text-xs p-2.5 rounded-lg focus:outline-none focus:border-green-500/50 font-mono
-                 ${highlightKeys && !draftKeys.openai ? 'animate-blink-2' : 'border-[var(--border-color)]'}
+                            placeholder="gsk_..."
+                            className={`w-full bg-[var(--bg-secondary)] border text-[var(--text-primary)] text-xs p-2.5 rounded-lg focus:outline-none focus:border-orange-500/50 font-mono
+                 ${highlightKeys && !draftKeys.groq ? 'animate-blink-2' : 'border-[var(--border-color)]'}
                `}
                         />
                     </div>

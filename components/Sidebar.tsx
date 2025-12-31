@@ -16,7 +16,7 @@ interface SidebarProps {
   unavailableModels?: Record<string, string>;
   onRefreshModels?: () => Promise<void>;
   isRefreshing?: boolean;
-  onSaveConfig?: (keys: { google?: string; openai?: string }) => Promise<void>;
+  onSaveConfig?: (keys: { google?: string; groq?: string }) => Promise<void>;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({

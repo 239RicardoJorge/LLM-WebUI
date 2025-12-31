@@ -1,7 +1,7 @@
 import { Attachment, Provider, ModelOption } from "../types";
 import { ILLMProvider } from "./providers/types";
 import { GoogleProvider } from "./providers/GoogleProvider";
-import { OpenAIProvider } from "./providers/OpenAIProvider";
+import { GroqProvider } from "./providers/GroqProvider";
 
 export class UnifiedService {
     private currentModel: string;
@@ -19,7 +19,7 @@ export class UnifiedService {
         // Initialize providers
         this.providers = {
             'google': new GoogleProvider(),
-            'openai': new OpenAIProvider()
+            'groq': new GroqProvider()
         };
     }
 
@@ -72,8 +72,8 @@ export class UnifiedService {
         let p: ILLMProvider;
         if (provider === 'google') {
             p = new GoogleProvider();
-        } else if (provider === 'openai') {
-            p = new OpenAIProvider();
+        } else if (provider === 'groq') {
+            p = new GroqProvider();
         } else {
             return [];
         }
@@ -86,8 +86,8 @@ export class UnifiedService {
         let p: ILLMProvider;
         if (provider === 'google') {
             p = new GoogleProvider();
-        } else if (provider === 'openai') {
-            p = new OpenAIProvider();
+        } else if (provider === 'groq') {
+            p = new GroqProvider();
         } else {
             throw new Error(`Provider ${provider} not found`);
         }

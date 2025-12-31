@@ -199,7 +199,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Main Content Area */}
       <div
-        className="flex-1 overflow-y-auto px-4 md:px-0"
+        className="flex-1 overflow-y-auto px-4 md:px-0 [scrollbar-gutter:stable]"
       >
         <div className="max-w-3xl mx-auto pt-16 md:pt-24 pb-16 md:pb-32 min-h-full flex flex-col justify-center">
 
@@ -222,8 +222,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     </p>
                     <p className="text-xs font-mono text-[var(--error-text)] opacity-60 tracking-widest uppercase">
                       {unavailableCode === '429' ? 'Rate Limit Exceeded' :
-                        unavailableCode === '400' ? 'Invalid Request' :
-                          'Connection Failed'}
+                        unavailableCode === 'TERMS' ? 'Terms Acceptance Required' :
+                          unavailableCode === '400' ? 'Invalid Request' :
+                            'Connection Failed'}
                     </p>
                   </div>
                   {unavailableMessage && (() => {

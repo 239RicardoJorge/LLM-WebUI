@@ -8,7 +8,7 @@ A modern, local-first LLM WebUI that runs on your hardware (like Raspberry Pi).
 
 ## Features
 - **Local Priority**: Designed to run efficiently on low-power devices.
-- **Multi-Provider**: Support for Google Gemini, OpenAI, and Anthropic.
+- **Multi-Provider**: Support for **Google Gemini** and **Groq** (Llama 3, Mixtral).
 - **System Monitoring**: Real-time visualization of your host device's CPU and RAM usage.
 - **Secure**: API Keys are stored locally in your browser.
 

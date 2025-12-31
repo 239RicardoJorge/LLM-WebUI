@@ -56,12 +56,12 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ mounted }) => {
         <div className="p-6 border-t border-[var(--border-color)]">
             <button
                 onClick={toggleOpen}
-                className={`flex items-center justify-between w-full group cursor-pointer ${isOpen ? 'mb-4' : 'mb-0'}`}
+                className={`flex items-center gap-2 w-full group cursor-pointer ${isOpen ? 'mb-4' : 'mb-0'}`}
             >
-                <div className="flex items-center gap-2">
-                    <Cpu className="w-3 h-3 text-green-500" />
-                    <span className="text-[10px] font-bold tracking-widest text-[var(--text-secondary)] uppercase group-hover:text-[var(--text-primary)] transition-colors duration-300">System Status (Host)</span>
-                </div>
+                <Cpu className="w-3 h-3 text-green-500" />
+                <span className="flex-1 text-left text-[10px] font-bold tracking-widest text-[var(--text-secondary)] uppercase group-hover:text-[var(--text-primary)] transition-colors duration-300">
+                    System Status (Host)
+                </span>
                 {isOpen ? <ChevronDown className="w-3 h-3 text-[var(--text-secondary)]" /> : <ChevronRight className="w-3 h-3 text-[var(--text-secondary)]" />}
             </button>
 

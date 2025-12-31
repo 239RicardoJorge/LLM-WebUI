@@ -51,14 +51,14 @@ export const useModelManagement = () => {
     // BATCH UPDATE LOGIC (Gradual Population) & SMART TOASTS
     // keys parameter allows passing fresh keys directly (avoids race condition after save)
     // silent = true: no toasts, no spinner animation (used by Save Config)
-    const refreshModels = async (manual = false, full = false, keys?: { google?: string; openai?: string }, silent = false) => {
+    const refreshModels = async (manual = false, full = false, keys?: { google?: string; groq?: string }, silent = false) => {
         // Abort pattern: increment ID and capture for this execution
         const thisRefreshId = ++refreshIdRef.current;
 
         const googleKey = (keys?.google ?? apiKeys.google)?.trim() || '';
-        const openaiKey = (keys?.openai ?? apiKeys.openai)?.trim() || '';
+        const groqKey = (keys?.groq ?? apiKeys.groq)?.trim() || '';
 
-        if (!googleKey && !openaiKey) {
+        if (!googleKey && !groqKey) {
             // Clear ALL models when no keys
             setAvailableModels([]);
             setUnavailableModels({});
@@ -84,12 +84,12 @@ export const useModelManagement = () => {
             );
 
             // 2. Fetch Structure (Always fetch list to detect NEW models)
-            const [googleModels, openaiModels] = await Promise.all([
+            const [googleModels, groqModels] = await Promise.all([
                 googleKey ? UnifiedService.validateKeyAndGetModels('google', googleKey).catch(() => []) : Promise.resolve([]),
-                openaiKey ? UnifiedService.validateKeyAndGetModels('openai', openaiKey).catch(() => []) : Promise.resolve([])
+                groqKey ? UnifiedService.validateKeyAndGetModels('groq', groqKey).catch(() => []) : Promise.resolve([])
             ]);
 
-            const allModels = [...(googleModels as ModelOption[]), ...(openaiModels as ModelOption[])];
+            const allModels = [...(googleModels as ModelOption[]), ...(groqModels as ModelOption[])];
 
             // Abort check after fetch
             if (refreshIdRef.current !== thisRefreshId) return;
@@ -131,7 +131,7 @@ export const useModelManagement = () => {
             let defaultSelectedInThisRefresh = !!(currentModel && !currentUnavailableModels[currentModel]);
 
             const verifyPromises = modelsToVerify.map(async (m) => {
-                const key = m.provider === 'google' ? googleKey : openaiKey;
+                const key = m.provider === 'google' ? googleKey : groqKey;
                 if (!key) return;
 
                 const result = await UnifiedService.checkModelAvailability(m.provider, m.id, key);
@@ -140,7 +140,7 @@ export const useModelManagement = () => {
                 if (refreshIdRef.current !== thisRefreshId) return;
 
                 if (!result.available) {
-                    const finalCode = result.errorCode === '429' ? '429' : '400';
+                    const finalCode = result.errorCode === '429' ? '429' : (result.errorCode === 'TERMS' ? 'TERMS' : '400');
                     currentUnavailableModels[m.id] = finalCode;
                     currentUnavailableErrors[m.id] = result.error || 'Unknown Error';
 

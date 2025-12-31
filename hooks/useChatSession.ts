@@ -223,7 +223,7 @@ export const useChatSession = ({
         if (!content.trim() && !attachment) return false;
 
         // 2. Generic API Key Check
-        const hasAnyKey = !!apiKeys.google || !!apiKeys.openai;
+        const hasAnyKey = !!apiKeys.google || !!apiKeys.groq;
 
         if (!hasAnyKey) {
             toast.error("Please connect an API Key to start chatting");
@@ -328,9 +328,10 @@ export const useChatSession = ({
 
             // Determine error code
             let errorCode = "Error";
-            if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota') || errorMessage.toLowerCase().includes('rate limit')) {
+            const lowerError = errorMessage.toLowerCase();
+            if (lowerError.includes('429') || lowerError.includes('quota') || lowerError.includes('rate limit') || lowerError.includes('tpm') || (lowerError.includes('too large') && lowerError.includes('model'))) {
                 errorCode = "429";
-            } else if (errorMessage.includes('400') || errorMessage.toLowerCase().includes('invalid request')) {
+            } else if (lowerError.includes('400') || lowerError.includes('invalid request')) {
                 errorCode = "400";
             }
 

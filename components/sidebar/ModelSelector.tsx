@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ModelOption } from '../../types';
-import { Settings2, ChevronDown, ChevronRight, Zap, Box } from 'lucide-react';
+import { Settings2, ChevronDown, ChevronRight, Zap, Cpu } from 'lucide-react';
 
 interface ModelSelectorProps {
     currentModel: string;
@@ -104,7 +104,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                                     ) : (
                                                         <>
                                                             {model.provider === 'google' && <Zap className="w-3 h-3 text-blue-400 inline" />}
-                                                            {model.provider === 'openai' && <Box className="w-3 h-3 text-green-400 inline" />}
+                                                            {model.provider === 'groq' && <Cpu className="w-3 h-3 text-orange-400 inline" />}
                                                         </>
                                                     )}
                                                 </span>

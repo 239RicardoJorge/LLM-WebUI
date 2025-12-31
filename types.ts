@@ -3,7 +3,7 @@ export enum Role {
   MODEL = 'model'
 }
 
-export type Provider = 'google' | 'openai';
+export type Provider = 'google' | 'groq';
 
 export interface Attachment {
   mimeType: string;
@@ -39,7 +39,7 @@ export interface ModelOption {
 
 export interface ApiKeys {
   google: string;
-  openai: string;
+  groq: string;
 }
 
 export const AVAILABLE_MODELS: ModelOption[] = [];

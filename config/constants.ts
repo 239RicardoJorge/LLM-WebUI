@@ -11,7 +11,7 @@ export const APP_CONFIG = {
     // URLs
     PROVIDER_URLS: {
         google: 'https://aistudio.google.com/app/apikey',
-        openai: 'https://platform.openai.com/api-keys'
+        groq: 'https://console.groq.com/keys'
     },
 
     // LocalStorage Keys
