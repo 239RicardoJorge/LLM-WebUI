@@ -55,6 +55,7 @@ export const useChatSession = ({
 
             // Try to load from IndexedDB
             let loaded = await loadMessages(DEFAULT_CONVERSATION_ID);
+            console.log('[CCS] Loaded from IndexedDB:', loaded.length, 'messages');
 
             // Migrate from old localStorage if IndexedDB is empty
             if (loaded.length === 0) {
@@ -100,6 +101,7 @@ export const useChatSession = ({
             });
 
             setMessages(processed);
+            console.log('[CCS] Hydration complete:', processed.length, 'messages');
             hasHydratedRef.current = true;
             lastSavedMessagesRef.current = JSON.stringify(processed);
             setIsHydrating(false);
@@ -139,6 +141,7 @@ export const useChatSession = ({
         }
         // Schedule new write to IndexedDB
         debounceTimeoutRef.current = setTimeout(() => {
+            console.log('[CCS] Saving', messages.length, 'messages to IndexedDB');
             saveMessages(DEFAULT_CONVERSATION_ID, messages);
             lastSavedMessagesRef.current = JSON.stringify(messages);
             debounceTimeoutRef.current = null;
@@ -175,6 +178,13 @@ export const useChatSession = ({
             serviceRef.current.setConfig(currentModel, activeModelDef.provider, activeKey);
         }
     }, [currentModel, apiKeys, activeModelDef]);
+
+    // Sync history to LLM provider after hydration completes and service is ready
+    useEffect(() => {
+        if (!isHydrating && serviceRef.current && messages.length > 0) {
+            serviceRef.current.setHistory(messages);
+        }
+    }, [isHydrating, messages.length]);
 
 
     const handleClearChat = async () => {

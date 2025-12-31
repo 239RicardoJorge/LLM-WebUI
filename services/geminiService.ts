@@ -47,6 +47,11 @@ export class UnifiedService {
         if (p.resetSession) await p.resetSession();
     }
 
+    public setHistory(messages: import("../types").ChatMessage[]) {
+        const p = this.getProvider();
+        if (p.setHistory) p.setHistory(messages);
+    }
+
     public async *sendMessageStream(message: string, attachment?: Attachment, signal?: AbortSignal): AsyncGenerator<string, void, unknown> {
         if (!this.apiKey) {
             throw new Error("API Key missing for " + this.currentProvider);

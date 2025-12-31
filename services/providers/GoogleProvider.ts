@@ -146,6 +146,31 @@ export class GoogleProvider implements ILLMProvider {
         }
     }
 
+    setHistory(messages: import("../../types").ChatMessage[]): void {
+        // Convert ChatMessage[] to Google's message format
+        this.messageHistory = [];
+        for (const msg of messages) {
+            if (msg.role === 'user') {
+                const parts: any[] = [];
+                // Add attachment if present and active
+                if (msg.attachment && msg.attachment.data && msg.attachment.isActive !== false) {
+                    parts.push({ inlineData: { mimeType: msg.attachment.mimeType, data: msg.attachment.data } });
+                }
+                if (msg.content) {
+                    parts.push({ text: msg.content });
+                }
+                if (parts.length > 0) {
+                    this.messageHistory.push({ role: 'user', parts });
+                }
+            } else if (msg.role === 'model') {
+                if (msg.content) {
+                    this.messageHistory.push({ role: 'model', parts: [{ text: msg.content }] });
+                }
+            }
+        }
+        console.log('[GoogleProvider] History restored:', this.messageHistory.length, 'messages');
+    }
+
     async resetSession() {
         this.messageHistory = [];
     }
