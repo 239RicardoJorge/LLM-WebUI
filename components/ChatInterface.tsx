@@ -343,10 +343,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                   </p>
                                 </div>
                                 <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-0.5">
-                                  {msg.attachment.mimeType.split('/')[1]}
-                                  {/* Show thumbnail size if using thumbnail/inactive, otherwise original size */}
+                                  {/* Show format: JPEG if using thumbnail, otherwise original format */}
+                                  {(msg.attachment.thumbnail && !msg.attachment.data) ? 'JPEG' : msg.attachment.mimeType.split('/')[1]}
+                                  {/* Show size: thumbnail size + THUMB label, or original size */}
                                   {(msg.attachment.thumbnail && !msg.attachment.data)
-                                    ? ` • ${formatFileSize(Math.round(msg.attachment.thumbnail.length * 0.75))} (thumb)`
+                                    ? ` • ${formatFileSize(Math.round(msg.attachment.thumbnail.length * 0.75))} THUMB`
                                     : (msg.attachment.size && ` • ${formatFileSize(msg.attachment.size)}`)
                                   }
                                   {msg.attachment.duration && ` • ${formatDuration(msg.attachment.duration)}`}
