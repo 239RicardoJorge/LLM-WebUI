@@ -82,7 +82,7 @@ const App: React.FC = () => {
   const handleModelChange = (modelId: string) => {
     setCurrentModel(modelId);
     setSidebarOpen(false);
-    setMessages([]);
+    // Note: We no longer clear messages - conversation persists across model changes
   };
 
   return (

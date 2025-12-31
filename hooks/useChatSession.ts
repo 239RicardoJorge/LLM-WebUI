@@ -179,12 +179,12 @@ export const useChatSession = ({
         }
     }, [currentModel, apiKeys, activeModelDef]);
 
-    // Sync history to LLM provider after hydration completes and service is ready
+    // Sync history to LLM provider after hydration completes, service is ready, or model changes
     useEffect(() => {
         if (!isHydrating && serviceRef.current && messages.length > 0) {
             serviceRef.current.setHistory(messages);
         }
-    }, [isHydrating, messages.length]);
+    }, [isHydrating, messages.length, currentModel]);
 
 
     const handleClearChat = async () => {
