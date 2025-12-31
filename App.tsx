@@ -55,7 +55,8 @@ const App: React.FC = () => {
     setUnavailableModels,
     setUnavailableModelErrors,
     refreshModels,
-    isRefreshing
+    isRefreshing,
+    fallbackToPreviousModel
   } = useModelManagement();
 
   // 2. Chat Session Hook
@@ -75,7 +76,8 @@ const App: React.FC = () => {
     setUnavailableModels,
     setUnavailableModelErrors,
     setSidebarOpen,
-    setHighlightKeys
+    setHighlightKeys,
+    fallbackToPreviousModel
   });
 
   // Derived Handlers

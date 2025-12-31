@@ -14,6 +14,8 @@ export const useModelManagement = () => {
         return localStorage.getItem(APP_CONFIG.STORAGE_KEYS.CURRENT_MODEL) || '';
     });
 
+    const [previousModel, setPreviousModel] = useState<string>('');
+
     const [availableModels, setAvailableModels] = useState<ModelOption[]>(() => {
         const saved = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.AVAILABLE_MODELS);
         return saved ? JSON.parse(saved) : [];
@@ -218,15 +220,34 @@ export const useModelManagement = () => {
 
     // Auto-refresh DISABLED - Models only refresh on manual trigger or API key save
 
+    // Helper to change model while tracking the previous one
+    const changeModel = (newModelId: string) => {
+        if (newModelId !== currentModel && currentModel) {
+            setPreviousModel(currentModel);
+        }
+        setCurrentModel(newModelId);
+    };
+
+    // Fallback to previous model (used when new model errors)
+    const fallbackToPreviousModel = () => {
+        if (previousModel && previousModel !== currentModel) {
+            toast.info(`Falling back to previous model: ${previousModel}`);
+            setCurrentModel(previousModel);
+            return true;
+        }
+        return false;
+    };
+
     return {
         currentModel,
-        setCurrentModel,
+        setCurrentModel: changeModel, // Use changeModel instead of raw setter
         availableModels,
         unavailableModels,
         unavailableModelErrors,
         setUnavailableModels,
         setUnavailableModelErrors,
         isRefreshing,
-        refreshModels
+        refreshModels,
+        fallbackToPreviousModel
     };
 };

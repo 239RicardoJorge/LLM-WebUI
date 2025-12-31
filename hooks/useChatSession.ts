@@ -22,6 +22,7 @@ interface UseChatSessionProps {
     setUnavailableModelErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
     setSidebarOpen: (open: boolean) => void;
     setHighlightKeys: (highlight: boolean) => void;
+    fallbackToPreviousModel: () => boolean;
 }
 
 export const useChatSession = ({
@@ -31,7 +32,8 @@ export const useChatSession = ({
     setUnavailableModels,
     setUnavailableModelErrors,
     setSidebarOpen,
-    setHighlightKeys
+    setHighlightKeys,
+    fallbackToPreviousModel
 }: UseChatSessionProps) => {
     const { apiKeys } = useSettingsStore();
 
@@ -329,8 +331,12 @@ export const useChatSession = ({
             // Toast
             if (errorCode === "429") {
                 toast.error("Oops! Rate limit exceeded (429). Please try again later.");
+                // Try to fallback to previous working model
+                fallbackToPreviousModel();
             } else if (errorCode === "400") {
                 toast.error("Oops! Invalid request (400). Please check your input.");
+                // Try to fallback to previous working model
+                fallbackToPreviousModel();
             } else {
                 toast.error(errorMessage);
             }
