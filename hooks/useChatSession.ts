@@ -4,6 +4,15 @@ import { UnifiedService } from '../services/geminiService';
 import { ChatMessage, Role, Attachment, ModelOption } from '../types';
 import { useSettingsStore } from '../store/settingsStore';
 import { APP_CONFIG } from '../config/constants';
+import {
+    saveMessages,
+    loadMessages,
+    deleteConversation,
+    migrateFromLocalStorage,
+    saveMessagesSync,
+    applyPendingSaves,
+    DEFAULT_CONVERSATION_ID
+} from '../utils/storage';
 
 interface UseChatSessionProps {
     currentModel: string;
@@ -26,21 +35,72 @@ export const useChatSession = ({
 }: UseChatSessionProps) => {
     const { apiKeys } = useSettingsStore();
 
-
-    const [messages, setMessages] = useState<ChatMessage[]>(() => {
-        try {
-            const saved = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.CHAT_MESSAGES);
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            return [];
-        }
-    });
+    // Start with empty, hydrate from IndexedDB
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [isHydrating, setIsHydrating] = useState(true);
 
     const [isLoading, setIsLoading] = useState(false);
     const serviceRef = useRef<UnifiedService | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const messagesRef = useRef(messages); // Keep ref in sync for beforeunload
+    const hasHydratedRef = useRef(false); // Track if hydration is complete
+    const lastSavedMessagesRef = useRef<string>('[]'); // Track last saved state to avoid redundant saves
+
+    // Hydrate from IndexedDB on mount
+    useEffect(() => {
+        const hydrate = async () => {
+            // Apply any pending sync saves first
+            await applyPendingSaves(DEFAULT_CONVERSATION_ID);
+
+            // Try to load from IndexedDB
+            let loaded = await loadMessages(DEFAULT_CONVERSATION_ID);
+
+            // Migrate from old localStorage if IndexedDB is empty
+            if (loaded.length === 0) {
+                loaded = await migrateFromLocalStorage(
+                    APP_CONFIG.STORAGE_KEYS.CHAT_MESSAGES,
+                    DEFAULT_CONVERSATION_ID
+                );
+            }
+
+            // Restore implicit data for active attachments (persistence restoration)
+            const processed = loaded.map((msg: ChatMessage) => {
+                // Check if attachment exists and is an image
+                if (msg.attachment && msg.attachment.mimeType.startsWith('image/')) {
+                    // CRITICAL: Respect the persisted 'isActive' state.
+                    // If isActive is explicitly false, we do NOT restore data.
+                    // If isActive is true (or undefined for legacy), we restore from thumbnail.
+                    const shouldRestore = msg.attachment.isActive !== false;
+
+                    // If we should restore, but have no data (expected from storage), AND have a thumbnail
+                    if (shouldRestore && !msg.attachment.data && msg.attachment.thumbnail) {
+                        try {
+                            const thumbnailBase64 = msg.attachment.thumbnail.split(',')[1];
+                            return {
+                                ...msg,
+                                attachment: {
+                                    ...msg.attachment,
+                                    isActive: true, // Confirm it's active
+                                    data: thumbnailBase64
+                                }
+                            };
+                        } catch (e) {
+                            console.error('Failed to restore thumbnail context:', e);
+                            return msg;
+                        }
+                    }
+                }
+                return msg;
+            });
+
+            setMessages(processed);
+            hasHydratedRef.current = true;
+            lastSavedMessagesRef.current = JSON.stringify(processed);
+            setIsHydrating(false);
+        };
+        hydrate();
+    }, []);
 
     // Keep messagesRef in sync
     useEffect(() => {
@@ -53,18 +113,29 @@ export const useChatSession = ({
             clearTimeout(debounceTimeoutRef.current);
             debounceTimeoutRef.current = null;
         }
-        localStorage.setItem(APP_CONFIG.STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(messagesRef.current));
+        // Only flush if hydration is complete
+        if (hasHydratedRef.current) {
+            saveMessagesSync(DEFAULT_CONVERSATION_ID, messagesRef.current);
+        }
     };
 
-    // Debounced persist (2000ms)
+    // Debounced persist to IndexedDB (2000ms)
     useEffect(() => {
+        // Skip if hydration hasn't completed yet
+        if (!hasHydratedRef.current) return;
+
+        // Skip if messages haven't actually changed since last save
+        const currentMessagesJson = JSON.stringify(messages);
+        if (currentMessagesJson === lastSavedMessagesRef.current) return;
+
         // Clear any existing timeout
         if (debounceTimeoutRef.current) {
             clearTimeout(debounceTimeoutRef.current);
         }
-        // Schedule new write
+        // Schedule new write to IndexedDB
         debounceTimeoutRef.current = setTimeout(() => {
-            localStorage.setItem(APP_CONFIG.STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(messages));
+            saveMessages(DEFAULT_CONVERSATION_ID, messages);
+            lastSavedMessagesRef.current = JSON.stringify(messages);
             debounceTimeoutRef.current = null;
         }, 2000);
 
@@ -110,7 +181,10 @@ export const useChatSession = ({
         setIsLoading(false);
 
         setMessages([]);
-        localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.CHAT_MESSAGES);
+        // Clear from IndexedDB and any pending localStorage
+        await deleteConversation(DEFAULT_CONVERSATION_ID);
+        localStorage.removeItem(`ccs_messages_pending_${DEFAULT_CONVERSATION_ID}`);
+
         if (serviceRef.current) {
             await serviceRef.current.resetSession();
         }
@@ -252,12 +326,48 @@ export const useChatSession = ({
         return true;
     };
 
+    /**
+     * Toggle thumbnail as context for a specific message
+     * For images: activates thumbnail as approximate context or deactivates it
+     */
+    const toggleThumbnailContext = (messageId: string) => {
+        setMessages(prev => prev.map(msg => {
+            if (msg.id !== messageId || !msg.attachment) return msg;
+
+            const attachment = msg.attachment;
+
+            // Only works for images with thumbnails
+            if (!attachment.thumbnail || !attachment.mimeType.startsWith('image/')) {
+                return msg;
+            }
+
+            // Extract base64 from thumbnail data URL (remove "data:image/jpeg;base64," prefix)
+            const thumbnailBase64 = attachment.thumbnail.split(',')[1];
+
+            // Determine new state (toggle current)
+            // Default to true if undefined, so we toggle to false
+            const currentIsActive = attachment.isActive !== false;
+            const newIsActive = !currentIsActive;
+
+            return {
+                ...msg,
+                attachment: {
+                    ...attachment,
+                    isActive: newIsActive,
+                    data: newIsActive ? thumbnailBase64 : undefined
+                }
+            };
+        }));
+    };
+
     return {
         messages,
         setMessages,
         isLoading,
+        isHydrating,
         handleSendMessage,
         handleStopGeneration,
-        handleClearChat
+        handleClearChat,
+        toggleThumbnailContext
     };
 };

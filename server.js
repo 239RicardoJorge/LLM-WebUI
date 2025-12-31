@@ -12,7 +12,9 @@ const app = express();
 const PORT = process.env.PORT || 3001; // Backend Port
 
 app.use(cors());
-app.use(express.json());
+// Increase limit for large file uploads (base64 encoded attachments)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Rate Limiters (per endpoint)
 const chatLimiter = rateLimit({

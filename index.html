@@ -142,6 +142,31 @@
       transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
+    /* Marquee animation for long text on hover */
+    @keyframes marquee {
+      0% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(-50%);
+      }
+    }
+
+    .text-slide-hover {
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .text-slide-hover .text-slide-inner {
+      display: inline-block;
+      padding-right: 1em;
+    }
+
+    .text-slide-hover:hover .text-slide-inner.needs-scroll {
+      animation: marquee 12s linear infinite;
+    }
+
     /* Premium Scrollbar */
     ::-webkit-scrollbar {
       width: 6px;

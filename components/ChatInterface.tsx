@@ -1,8 +1,16 @@
 import React, { useRef, useEffect, useState, Suspense } from 'react';
 import { ArrowUp, Menu, Terminal, Paperclip, X, Square, AlertTriangle, ExternalLink } from 'lucide-react';
+import { toast } from 'sonner';
 // Lazy load MarkdownRenderer to split heavy dependencies (react-markdown, remark, katex)
 const MarkdownRenderer = React.lazy(() => import('./MarkdownRenderer'));
 import { ChatMessage, Role, Attachment } from '../types';
+import {
+  validateFileSize,
+  processAttachment,
+  formatFileSize,
+  formatDuration,
+  getFileTypeIcon
+} from '../utils/thumbnails';
 
 interface ChatInterfaceProps {
   messages: ChatMessage[];
@@ -13,6 +21,7 @@ interface ChatInterfaceProps {
   setSidebarOpen: (open: boolean) => void;
   unavailableCode?: string;
   unavailableMessage?: string;
+  onToggleThumbnailContext?: (messageId: string) => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -23,7 +32,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   sidebarOpen,
   setSidebarOpen,
   unavailableCode,
-  unavailableMessage
+  unavailableMessage,
+  onToggleThumbnailContext
 }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<Attachment | undefined>(undefined);
@@ -115,26 +125,52 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       handleSubmit();
     }
   };
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const base64Data = e.target?.result as string;
-      // Remove data URL prefix (e.g., "data:image/jpeg;base64,")
-      const base64Content = base64Data.split(',')[1];
-
-      setAttachment({
-        mimeType: file.type,
-        data: base64Content,
-        name: file.name
-      });
-    };
-    reader.readAsDataURL(file);
-
-    // Reset value to allow selecting same file again
+    // Reset input immediately to allow re-selecting same file
     if (fileInputRef.current) fileInputRef.current.value = '';
+
+    // Validate file size
+    const validation = validateFileSize(file);
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
+    if (validation.warning) {
+      toast.warning(validation.warning);
+    }
+
+    try {
+      // Process file and generate thumbnail
+      const meta = await processAttachment(file);
+
+      // Read file content as base64 for API
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64Data = event.target?.result as string;
+        const base64Content = base64Data.split(',')[1];
+
+        setAttachment({
+          mimeType: file.type,
+          data: base64Content,
+          name: meta.name,
+          size: meta.size,
+          thumbnail: meta.thumbnail,
+          duration: meta.duration,
+          dimensions: meta.dimensions,
+          isActive: true
+        });
+      };
+      reader.onerror = () => {
+        toast.error('Failed to read file. Please try again.');
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('File processing error:', error);
+      toast.error('Failed to process file. Please try a different file.');
+    }
   };
 
   const removeAttachment = () => {
@@ -148,7 +184,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         ref={fileInputRef}
         onChange={handleFileSelect}
         className="hidden"
-        accept="image/*,application/pdf"
+        accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.txt,.md"
       />
 
       {/* Mobile Toggle */}
@@ -264,19 +300,146 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 {msg.role === Role.USER ? (
                   <div className="flex flex-col items-end max-w-[80%]">
                     {msg.attachment && (
-                      <div className="mb-2 rounded-xl overflow-hidden border border-[var(--border-color)] shadow-lg max-w-[200px]">
-                        {msg.attachment.mimeType.startsWith('image/') ? (
-                          <img
-                            src={`data:${msg.attachment.mimeType};base64,${msg.attachment.data}`}
-                            alt="User Upload"
-                            className="w-full h-auto"
-                          />
+                      <>
+                        {/* Visual media (images/videos) with thumbnails */}
+                        {(msg.attachment.thumbnail || (msg.attachment.mimeType.startsWith('image/') && msg.attachment.data)) ? (
+                          <div className="flex gap-2 mb-2">
+                            {/* Toggle Context Indicator - Always visible to allow user control */}
+                            <div className="flex items-start">
+                              <button
+                                onClick={() => {
+                                  if (msg.attachment?.thumbnail && msg.attachment.mimeType.startsWith('image/')) {
+                                    onToggleThumbnailContext?.(msg.id);
+                                    // Toast handled by state change effect or let user see visual change
+                                    if (msg.attachment.isActive === false) {
+                                      toast.success('Thumbnail activated as approximate context.');
+                                    } else {
+                                      toast.info('Thumbnail removed from context.');
+                                    }
+                                  } else {
+                                    toast.info('Media no longer in context. Refresh cleared the original file from memory.');
+                                  }
+                                }}
+                                className={`flex-shrink-0 transition-all duration-300 cursor-pointer p-1 rounded-full ${msg.attachment.isActive === false
+                                    ? 'text-[var(--text-muted)] opacity-60 hover:opacity-100 hover:text-[var(--error-text)]'
+                                    : 'text-green-500 opacity-60 hover:opacity-100 hover:text-green-400'
+                                  }`}
+                                style={{
+                                  marginTop: msg.attachment.dimensions
+                                    ? `${Math.min(msg.attachment.dimensions.height / msg.attachment.dimensions.width * 200, 200) / 2 - 8}px`
+                                    : '50px'
+                                }}
+                                title={msg.attachment.isActive === false ? "Activate Context" : "Deactivate Context"}
+                              >
+                                {msg.attachment.isActive === false ? (
+                                  <AlertTriangle className="w-4 h-4" />
+                                ) : (
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check-circle-2"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Card with thumbnail + description */}
+                            {/* Card with thumbnail + description */}
+                            <div
+                              className={`rounded-2xl overflow-hidden border border-[var(--border-color)] shadow-lg max-w-[200px] bg-[var(--bg-primary)]/90 backdrop-blur-2xl ${msg.attachment.isActive === false && !msg.attachment.data ? 'opacity-50' : ''} ${msg.attachment.data || msg.attachment.thumbnail ? 'cursor-pointer' : ''}`}
+                              onClick={async () => {
+                                const src = msg.attachment?.thumbnail || (msg.attachment?.data ? `data:${msg.attachment.mimeType};base64,${msg.attachment.data}` : null);
+                                if (src) {
+                                  try {
+                                    const blob = await (await fetch(src)).blob();
+                                    const url = URL.createObjectURL(blob);
+                                    window.open(url, '_blank');
+                                    // setTimeout(() => URL.revokeObjectURL(url), 1000); // Clean up after a delay
+                                  } catch (e) {
+                                    console.error("Failed to open image", e);
+                                  }
+                                }
+                              }}
+                            >
+                              <div className="relative">
+                                <img
+                                  src={msg.attachment.thumbnail || `data:${msg.attachment.mimeType};base64,${msg.attachment.data}`}
+                                  className="w-full h-auto"
+                                  alt="preview"
+                                />
+                                {msg.attachment.mimeType.startsWith('video/') && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                    <span className="text-white text-2xl">▶</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="px-3 pt-2 pb-3">
+                                <div className="text-slide-hover overflow-hidden whitespace-nowrap">
+                                  <p className={`text-slide-inner text-xs text-[var(--text-primary)] inline-block ${msg.attachment.name && msg.attachment.name.length > 28 ? 'needs-scroll' : ''}`}>
+                                    {msg.attachment.name || 'File'}
+                                    {msg.attachment.name && msg.attachment.name.length > 28 && (
+                                      <span className="pl-8">{msg.attachment.name}</span>
+                                    )}
+                                  </p>
+                                </div>
+                                <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-0.5">
+                                  {msg.attachment.mimeType.split('/')[1]}
+                                  {/* Show thumbnail size if using thumbnail/inactive, otherwise original size */}
+                                  {(msg.attachment.isActive === false && msg.attachment.thumbnail)
+                                    ? ` • ${formatFileSize(Math.round(msg.attachment.thumbnail.length * 0.75))} (thumb)`
+                                    : (msg.attachment.size && ` • ${formatFileSize(msg.attachment.size)}`)
+                                  }
+                                  {msg.attachment.duration && ` • ${formatDuration(msg.attachment.duration)}`}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                         ) : (
-                          <div className="p-4 bg-[var(--bg-secondary)] text-xs text-[var(--text-secondary)]">
-                            {msg.attachment.mimeType}
+                          /* Non-visual files (PDF, audio, docs) - compact bubble */
+                          <div className="flex items-center gap-2 mb-2">
+                            {/* Inactive indicator */}
+                            {msg.attachment.isActive === false && (
+                              <button
+                                onClick={() => toast.info('Media no longer in context. Refresh cleared the original file from memory.')}
+                                className="flex-shrink-0 text-[var(--text-muted)] opacity-40 hover:opacity-70 transition-opacity cursor-pointer"
+                              >
+                                <AlertTriangle className="w-4 h-4" />
+                              </button>
+                            )}
+
+                            <div
+                              className={`p-2 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-2xl shadow-lg flex items-center gap-3 max-w-[280px] ${msg.attachment.isActive === false ? 'opacity-50' : ''} ${msg.attachment.data ? 'cursor-pointer' : ''}`}
+                              onClick={async () => {
+                                if (msg.attachment?.data) {
+                                  try {
+                                    const src = `data:${msg.attachment.mimeType};base64,${msg.attachment.data}`;
+                                    const blob = await (await fetch(src)).blob();
+                                    const url = URL.createObjectURL(blob);
+                                    window.open(url, '_blank');
+                                  } catch (e) {
+                                    console.error("Failed to open file", e);
+                                  }
+                                }
+                              }}
+                            >
+                              <div className="w-12 h-12 rounded-lg bg-[var(--bg-secondary)] overflow-hidden flex items-center justify-center flex-shrink-0">
+                                <span className="text-xl">{getFileTypeIcon(msg.attachment.mimeType)}</span>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="text-slide-hover overflow-hidden whitespace-nowrap">
+                                  <p className={`text-slide-inner text-xs text-[var(--text-primary)] inline-block ${msg.attachment.name && msg.attachment.name.length > 28 ? 'needs-scroll' : ''}`}>
+                                    {msg.attachment.name || 'File'}
+                                    {msg.attachment.name && msg.attachment.name.length > 28 && (
+                                      <span className="pl-8">{msg.attachment.name}</span>
+                                    )}
+                                  </p>
+                                </div>
+                                <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-0.5">
+                                  {msg.attachment.mimeType.split('/')[1]}
+                                  {msg.attachment.size && ` • ${formatFileSize(msg.attachment.size)}`}
+                                  {msg.attachment.duration && ` • ${formatDuration(msg.attachment.duration)}`}
+                                </p>
+                              </div>
+                            </div>
                           </div>
                         )}
-                      </div>
+                      </>
                     )}
                     {msg.content && (
                       <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-[2rem] px-8 py-5 text-[17px] text-[var(--text-primary)] leading-relaxed shadow-lg break-words hyphens-auto whitespace-pre-wrap transition-all duration-500">
@@ -329,20 +492,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {/* Attachment Preview - Glass Panel popping up */}
             {attachment && (
               <div className="absolute bottom-full left-0 mb-4 p-2 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-2xl shadow-2xl flex items-center gap-3 animate-fade-up">
-                <div className="w-12 h-12 rounded-lg bg-[var(--bg-secondary)] overflow-hidden flex items-center justify-center relative">
-                  {attachment.mimeType.startsWith('image/') ? (
-                    <img
-                      src={`data:${attachment.mimeType};base64,${attachment.data}`}
-                      className="w-full h-full object-cover"
-                      alt="preview"
-                    />
+                <div className="w-12 h-12 rounded-lg bg-[var(--bg-secondary)] overflow-hidden flex items-center justify-center">
+                  {attachment.thumbnail ? (
+                    <img src={attachment.thumbnail} className="w-full h-full object-cover" alt="preview" />
+                  ) : attachment.mimeType.startsWith('image/') && attachment.data ? (
+                    <img src={`data:${attachment.mimeType};base64,${attachment.data}`} className="w-full h-full object-cover" alt="preview" />
                   ) : (
-                    <Paperclip className="w-5 h-5 text-[var(--text-muted)]" />
+                    <span className="text-lg">{getFileTypeIcon(attachment.mimeType)}</span>
                   )}
                 </div>
                 <div className="pr-2">
                   <p className="text-xs text-[var(--text-primary)] max-w-[150px] truncate">{attachment.name || 'File'}</p>
-                  <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{attachment.mimeType.split('/')[1]}</p>
+                  <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
+                    {attachment.mimeType.split('/')[1]}
+                    {attachment.size && ` • ${formatFileSize(attachment.size)}`}
+                    {attachment.duration && ` • ${formatDuration(attachment.duration)}`}
+                  </p>
                 </div>
                 <button onClick={removeAttachment} className="p-1 hover:bg-[var(--bg-secondary)] rounded-full transition-colors duration-500">
                   <X className="w-4 h-4 text-[var(--text-secondary)]" />

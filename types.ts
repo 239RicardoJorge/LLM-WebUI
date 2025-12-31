@@ -7,8 +7,16 @@ export type Provider = 'google' | 'openai';
 
 export interface Attachment {
   mimeType: string;
-  data: string; // Base64
+  data?: string;          // Base64 - only in session memory (not persisted)
   name?: string;
+  size?: number;          // File size in bytes
+  thumbnail?: string;     // Base64 data URL for preview (persisted)
+  duration?: number;      // Seconds (for video/audio)
+  isActive?: boolean;     // True if data is in session, false if only metadata remains
+  dimensions?: {          // For images/video
+    width: number;
+    height: number;
+  };
 }
 
 export interface ChatMessage {
