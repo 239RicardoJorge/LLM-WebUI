@@ -231,7 +231,10 @@ export const useModelManagement = () => {
     // Fallback to previous model (used when new model errors)
     const fallbackToPreviousModel = () => {
         if (previousModel && previousModel !== currentModel) {
-            toast.info(`Falling back to previous model: ${previousModel}`);
+            // Delay the fallback toast so user can read the error first
+            setTimeout(() => {
+                toast.info(`Falling back to previous model: ${previousModel}`);
+            }, 1500);
             setCurrentModel(previousModel);
             return true;
         }

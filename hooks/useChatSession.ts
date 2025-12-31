@@ -334,9 +334,8 @@ export const useChatSession = ({
                 // Try to fallback to previous working model
                 fallbackToPreviousModel();
             } else if (errorCode === "400") {
+                // 400 = user error (bad input), don't fallback
                 toast.error("Oops! Invalid request (400). Please check your input.");
-                // Try to fallback to previous working model
-                fallbackToPreviousModel();
             } else {
                 toast.error(errorMessage);
             }
