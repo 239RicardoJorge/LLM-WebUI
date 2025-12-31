@@ -89,24 +89,29 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                               ${isUnavailable ? 'border-red-500/10 bg-red-500/5' : ''}
                           `}
                                 >
-                                    <div className="flex items-start justify-between mb-1 relative z-10">
-                                        {/* Model name - can wrap */}
-                                        <span className={`text-[13px] font-medium tracking-tight flex-1 mr-2 ${isUnavailable ? 'opacity-50 grayscale' : ''} ${isActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}>
-                                            {model.name}
+                                    {/* First row: Name + Status (inline flow) + Ball (flex aligned) */}
+                                    <div className="relative mb-1 flex items-start justify-between min-h-[1.25em]">
+                                        {/* Name: first words flow normally, last word + status stay together */}
+                                        <span style={{ lineHeight: '1.25', display: 'block' }} className={`text-[13px] font-medium tracking-tight pr-4 ${isUnavailable ? 'opacity-50 grayscale' : ''} ${isActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}>
+                                            {model.name.trim().split(' ').slice(0, -1).join(' ')}{model.name.trim().split(' ').length > 1 ? ' ' : ''}
+                                            {/* Last word + status in nowrap container with flex alignment */}
+                                            <span className="inline-flex items-center whitespace-nowrap">
+                                                <span>{model.name.trim().split(' ').slice(-1)}</span>
+                                                {/* Status icon - inline, right after last word */}
+                                                <span className={`inline-flex items-center gap-1 ml-1.5 ${isUnavailable ? 'opacity-50 grayscale' : ''}`}>
+                                                    {isUnavailable ? (
+                                                        <span className="text-[10px] font-bold text-red-500 bg-red-500/10 px-1 rounded tracking-tighter">({errorCode})</span>
+                                                    ) : (
+                                                        <>
+                                                            {model.provider === 'google' && <Zap className="w-3 h-3 text-blue-400 inline" />}
+                                                            {model.provider === 'openai' && <Box className="w-3 h-3 text-green-400 inline" />}
+                                                        </>
+                                                    )}
+                                                </span>
+                                            </span>
                                         </span>
-
-                                        {/* Status indicators - always first line, far right */}
-                                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                                            {isUnavailable ? (
-                                                <span className="text-[10px] font-bold text-red-500 bg-red-500/10 px-1 rounded tracking-tighter">({errorCode})</span>
-                                            ) : (
-                                                <>
-                                                    {model.provider === 'google' && <Zap className="w-3 h-3 text-blue-400" />}
-                                                    {model.provider === 'openai' && <Box className="w-3 h-3 text-green-400" />}
-                                                </>
-                                            )}
-                                            {isActive && <div className="w-1.5 h-1.5 rounded-full bg-[var(--indicator-bg)] border border-[var(--indicator-border)] shadow-[0_0_8px_var(--indicator-bg)]"></div>}
-                                        </div>
+                                        {/* Ball - centered with first line using margin-top to offset line-height center */}
+                                        <div className={`shrink-0 w-1.5 h-1.5 rounded-full mt-[6px] ${isActive ? 'bg-[var(--indicator-bg)] border border-[var(--indicator-border)] shadow-[0_0_8px_var(--indicator-bg)]' : ''}`}></div>
                                     </div>
                                     <div className={`text-[10px] truncate ${isActive ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]'} ${isUnavailable ? 'opacity-50 grayscale' : ''}`}>
                                         {model.description}
