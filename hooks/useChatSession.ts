@@ -257,6 +257,18 @@ export const useChatSession = ({
             return false;
         }
 
+        // 5. Check if model supports attachments (text-only models don't)
+        if (attachment && activeModelDef) {
+            const modelName = activeModelDef.id.toLowerCase();
+            // Heuristic: models with 'thinking' or containing 'text' (but not 'text-to') are text-only
+            const isTextOnly = modelName.includes('thinking') ||
+                (modelName.includes('text') && !modelName.includes('text-to'));
+            if (isTextOnly) {
+                toast.error(`This model (${activeModelDef.name}) doesn't support attachments. Please use a multimodal model or remove the attachment.`);
+                return false;
+            }
+        }
+
         const newUserMsg: ChatMessage = {
             id: Date.now().toString(),
             role: Role.USER,
