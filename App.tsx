@@ -86,7 +86,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div ref={wrapperRef} className="flex h-screen w-full relative overflow-hidden">
+    <div ref={wrapperRef} className={`flex h-screen w-full relative overflow-hidden transition-opacity duration-300 ${isHydrating ? 'opacity-0' : 'opacity-100'}`}>
       <Toaster position="top-right" theme={theme === 'dark' ? 'dark' : 'light'} richColors closeButton />
       <Sidebar
         currentModel={currentModel}
