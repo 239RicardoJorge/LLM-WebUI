@@ -310,15 +310,17 @@ export const useChatSession = ({
                 errorCode = "400";
             }
 
-            // Disable model
-            setUnavailableModels(prev => ({ ...prev, [currentModel]: errorCode }));
-            setUnavailableModelErrors(prev => ({ ...prev, [currentModel]: errorMessage }));
+            // Disable model ONLY for 429 (rate limit) errors, not 400
+            if (errorCode === "429") {
+                setUnavailableModels(prev => ({ ...prev, [currentModel]: errorCode }));
+                setUnavailableModelErrors(prev => ({ ...prev, [currentModel]: errorMessage }));
+            }
 
             // Toast
             if (errorCode === "429") {
                 toast.error("Oops! Rate limit exceeded (429). Please try again later.");
             } else if (errorCode === "400") {
-                toast.error("Oops! Invalid request (400). Please check the model or parameters.");
+                toast.error("Oops! Invalid request (400). Please check your input.");
             } else {
                 toast.error(errorMessage);
             }
