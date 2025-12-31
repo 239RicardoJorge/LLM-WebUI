@@ -1,5 +1,6 @@
 import { ILLMProvider } from "./types";
 import { ChatMessage, Attachment, ModelOption, Provider } from "../../types";
+import { categorizeError } from "../../utils/errorCategorization";
 
 export class GroqProvider implements ILLMProvider {
     public readonly id: Provider = 'groq';
@@ -25,15 +26,14 @@ export class GroqProvider implements ILLMProvider {
                     const id = m.id.toLowerCase();
                     return !id.includes('whisper') &&
                         !id.includes('tts') &&
-                        // !id.includes('vision') && // Re-enable vision if we want to support it (or let user try)
-                        !id.includes('guard');
+                        !id.includes('guard') &&
+                        !id.includes('orpheus');  // TTS models (canopylabs)
                 })
                 .map((m: any) => ({
                     id: m.id,
                     name: this.formatModelName(m.id),
                     description: `Groq - ${m.id}`,
                     provider: 'groq',
-                    // Use context_window if available, else default safe 8k
                     outputTokenLimit: m.context_window || 8192
                 }));
 
@@ -44,10 +44,6 @@ export class GroqProvider implements ILLMProvider {
     }
 
     private formatModelName(id: string): string {
-        // Generic formatter to make IDs prettier
-        // llama-3.1-70b-versatile -> Llama 3.1 70B Versatile
-        // mixtral-8x7b-32768 -> Mixtral 8x7B
-
         const parts = id.split('-');
 
         const nameParts = parts.map(p => {
@@ -57,7 +53,6 @@ export class GroqProvider implements ILLMProvider {
             if (p === 'gemma2') return 'Gemma 2';
             if (p === 'deepseek') return 'DeepSeek';
             if (p === 'qwen') return 'Qwen';
-            // Capitalize generic words
             return p.charAt(0).toUpperCase() + p.slice(1);
         });
 
@@ -65,18 +60,44 @@ export class GroqProvider implements ILLMProvider {
     }
 
     async checkModelAvailability(modelId: string, apiKey: string): Promise<{ available: boolean; error?: string; errorCode?: string }> {
+        console.log(`[GroqProvider] Checking availability for: ${modelId}`);
         try {
-            const res = await fetch(`${this.BASE_URL}/models/${modelId}`, {
-                headers: { 'Authorization': `Bearer ${apiKey}` }
+            // Do a REAL ping test (like Google) - actually call the model
+            const res = await fetch(`${this.BASE_URL}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: modelId,
+                    messages: [{ role: 'user', content: 'Hi' }],
+                    max_tokens: 1
+                })
             });
-            if (res.ok) return { available: true };
-            return { available: false, error: 'Model unavailable', errorCode: res.status.toString() };
-        } catch (error: any) {
-            const msg = error.message.toLowerCase();
-            if (msg.includes('terms') && msg.includes('acceptance')) {
-                return { available: false, error: error.message, errorCode: 'TERMS' };
+
+            console.log(`[GroqProvider] Response status for ${modelId}: ${res.status}`);
+
+            if (res.ok) {
+                console.log(`[GroqProvider] ${modelId} is available`);
+                return { available: true };
             }
-            return { available: false, error: error.message };
+
+            // Parse error response
+            let errorMessage = 'Model unavailable';
+            try {
+                const errData = await res.json();
+                errorMessage = errData.error?.message || errorMessage;
+                console.log(`[GroqProvider] Error for ${modelId}: ${errorMessage}`);
+            } catch { /* ignore parse errors */ }
+
+            const errorCode = categorizeError(errorMessage, res.status);
+            console.log(`[GroqProvider] ${modelId} categorized as: ${errorCode}`);
+            return { available: false, error: errorMessage, errorCode };
+        } catch (error: any) {
+            console.log(`[GroqProvider] Exception for ${modelId}: ${error.message}`);
+            const errorCode = categorizeError(error.message || '');
+            return { available: false, error: error.message, errorCode };
         }
     }
 
@@ -97,14 +118,9 @@ export class GroqProvider implements ILLMProvider {
         }
 
         // 2. History (Prepend)
-        // Convert ChatMessage[] to OpenAI format
         if (this.history.length > 0) {
             this.history.forEach(msg => {
-                // Skip failed messages or empty ones if necessary
-                // Also skip 'system' roles in history if we are handling system instruction separately,
-                // but usually history just contains user/model.
                 if (!msg.content && !msg.attachment) return;
-
                 const role = msg.role === 'model' ? 'assistant' : msg.role;
                 messages.push({ role, content: msg.content });
             });
@@ -124,7 +140,6 @@ export class GroqProvider implements ILLMProvider {
                     model: modelId,
                     messages: messages,
                     stream: true
-                    // temperature removed: use model default to avoid conflicts with reasoning models
                 }),
                 signal
             });
@@ -157,12 +172,8 @@ export class GroqProvider implements ILLMProvider {
                             const json = JSON.parse(trimmed.slice(6));
                             const delta = json.choices[0]?.delta;
 
-                            // Support both standard content and reasoning_content (DeepSeek/R1)
                             const content = delta?.content || '';
                             const reasoning = delta?.reasoning_content || '';
-
-                            // If we have reasoning but no <think> tags yet, we might want to wrap it? 
-                            // Usually Groq/DeepSeek handles this, but let's just yield what we get.
 
                             if (content) yield content;
                             if (reasoning) yield `\n<think>${reasoning}</think>\n`;

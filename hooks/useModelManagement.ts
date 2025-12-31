@@ -140,7 +140,8 @@ export const useModelManagement = () => {
                 if (refreshIdRef.current !== thisRefreshId) return;
 
                 if (!result.available) {
-                    const finalCode = result.errorCode === '429' ? '429' : (result.errorCode === 'TERMS' ? 'TERMS' : '400');
+                    // Preserve the original error code from the provider
+                    const finalCode = result.errorCode || '400';
                     currentUnavailableModels[m.id] = finalCode;
                     currentUnavailableErrors[m.id] = result.error || 'Unknown Error';
 

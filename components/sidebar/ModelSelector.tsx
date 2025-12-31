@@ -100,7 +100,13 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                                 {/* Status icon - inline, right after last word */}
                                                 <span className={`inline-flex items-center gap-1 ml-1.5 ${isUnavailable ? 'opacity-50 grayscale' : ''}`}>
                                                     {isUnavailable ? (
-                                                        <span className="text-[10px] font-bold text-red-500 bg-red-500/10 px-1 rounded tracking-tighter">({errorCode})</span>
+                                                        <span className={`text-[10px] font-bold px-1 rounded tracking-tighter ${errorCode === '429' ? 'text-yellow-500 bg-yellow-500/10' :
+                                                                errorCode === 'TERMS' ? 'text-purple-500 bg-purple-500/10' :
+                                                                    errorCode === 'AUTH' ? 'text-orange-500 bg-orange-500/10' :
+                                                                        errorCode === 'UNSUPPORTED' ? 'text-gray-500 bg-gray-500/10' :
+                                                                            errorCode === 'BILLING' ? 'text-amber-500 bg-amber-500/10' :
+                                                                                'text-red-500 bg-red-500/10'
+                                                            }`}>({errorCode})</span>
                                                     ) : (
                                                         <>
                                                             {model.provider === 'google' && <Zap className="w-3 h-3 text-blue-400 inline" />}

@@ -2,6 +2,7 @@ import { Attachment, ModelOption } from "../../types";
 import { ILLMProvider } from "./types";
 import { isGoogleModelAllowed, sortGoogleModels } from "../../config/modelRules";
 import { GoogleModelListSchema } from "../schemas";
+import { categorizeError } from "../../utils/errorCategorization";
 
 export class GoogleProvider implements ILLMProvider {
     readonly id = 'google';
@@ -206,14 +207,8 @@ export class GoogleProvider implements ILLMProvider {
             return { available: true };
         } catch (error: any) {
             console.warn(`[GoogleProvider] Availability check failed for ${modelId}:`, error);
-            let errorCode = "Error";
-            let errorMessage = error.message || 'Unknown error';
-
-            if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota') || errorMessage.toLowerCase().includes('rate limit')) {
-                errorCode = "429";
-            } else if (errorMessage.includes('400') || errorMessage.toLowerCase().includes('invalid')) {
-                errorCode = "400";
-            }
+            const errorMessage = error.message || 'Unknown error';
+            const errorCode = categorizeError(errorMessage);
             return { available: false, error: errorMessage, errorCode };
         }
     }
