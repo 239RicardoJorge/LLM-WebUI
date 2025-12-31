@@ -41,5 +41,3 @@ export interface ApiKeys {
   google: string;
   groq: string;
 }
-
-export const AVAILABLE_MODELS: ModelOption[] = [];
