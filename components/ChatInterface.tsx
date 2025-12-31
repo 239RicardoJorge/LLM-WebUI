@@ -15,6 +15,7 @@ import {
 interface ChatInterfaceProps {
   messages: ChatMessage[];
   isLoading: boolean;
+  isHydrating?: boolean;
   onSendMessage: (message: string, attachment?: Attachment) => Promise<boolean>;
   onStop: () => void;
   sidebarOpen: boolean;
@@ -26,6 +27,7 @@ interface ChatInterfaceProps {
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   messages,
   isLoading,
+  isHydrating = false,
   onSendMessage,
   onStop,
   sidebarOpen,
@@ -201,7 +203,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       >
         <div className="max-w-3xl mx-auto pt-16 md:pt-24 pb-16 md:pb-32 min-h-full flex flex-col justify-center">
 
-          {messages.length === 0 && (
+          {messages.length === 0 && !isHydrating && (
             <div className="flex flex-col items-center justify-center space-y-6">
               {unavailableCode ? (
                 <div

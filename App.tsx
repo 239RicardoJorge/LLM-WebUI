@@ -63,6 +63,7 @@ const App: React.FC = () => {
     messages,
     setMessages,
     isLoading,
+    isHydrating,
     handleSendMessage,
     handleStopGeneration,
     handleClearChat,
@@ -112,6 +113,7 @@ const App: React.FC = () => {
         <ChatInterface
           messages={messages}
           isLoading={isLoading}
+          isHydrating={isHydrating}
           onSendMessage={handleSendMessage}
           onStop={handleStopGeneration}
           sidebarOpen={sidebarOpen}
