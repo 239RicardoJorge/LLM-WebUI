@@ -13,6 +13,7 @@ export interface Attachment {
   thumbnail?: string;     // Base64 data URL for preview (persisted)
   duration?: number;      // Seconds (for video/audio)
   isActive?: boolean;     // True if data is in session, false if only metadata remains
+  isThumbnail?: boolean;  // True if currently displaying thumbnail instead of original
   dimensions?: {          // For images/video
     width: number;
     height: number;

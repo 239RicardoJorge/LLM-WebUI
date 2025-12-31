@@ -80,6 +80,7 @@ export const useChatSession = ({
                                     attachment: {
                                         ...msg.attachment,
                                         isActive: true, // Always active for thumbs
+                                        isThumbnail: true, // Flag to indicate we're using thumbnail
                                         data: thumbnailBase64
                                     }
                                 };
