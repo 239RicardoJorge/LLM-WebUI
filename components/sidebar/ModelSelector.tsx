@@ -124,20 +124,26 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
             </div>
 
             {/* Tag Filter - Horizontal tabs with multi-select */}
+            {/* Tag Filter - Horizontal tabs with multi-select */}
             {viewMode !== 'selected' && (
-                <div className="flex flex-wrap gap-1 mb-2">
-                    {MODEL_TAGS.map(tag => (
-                        <button
-                            key={tag.id}
-                            onClick={() => toggleTagFilter(tag.id)}
-                            className={`text-[9px] font-medium tracking-wider uppercase px-2 py-1 rounded transition-all ${activeTagFilters.includes(tag.id)
-                                ? 'bg-[var(--bg-glass)] text-[var(--text-primary)] border border-[var(--border-color)]'
-                                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                                }`}
-                        >
-                            {tag.label}
-                        </button>
-                    ))}
+                <div className="border border-dashed border-[var(--border-color)]/30 rounded-lg p-1.5 mb-2 bg-[var(--bg-glass)]/5">
+                    <div className="flex flex-wrap gap-1">
+                        {MODEL_TAGS.map(tag => {
+                            const isActive = activeTagFilters.includes(tag.id);
+                            return (
+                                <button
+                                    key={tag.id}
+                                    onClick={() => toggleTagFilter(tag.id)}
+                                    className={`text-[8px] font-medium tracking-wide uppercase px-1 py-[1px] rounded-[3px] border transition-all ${isActive
+                                        ? 'bg-[var(--bg-depth)] text-[var(--text-secondary)] border-[var(--border-color)]'
+                                        : 'bg-transparent text-[var(--text-muted)] border-transparent hover:text-[var(--text-secondary)]'
+                                        }`}
+                                >
+                                    {tag.label}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
 
