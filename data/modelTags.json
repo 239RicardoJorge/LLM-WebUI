@@ -1,197 +1,246 @@
 {
-    "gemini-2.5-flash": [
-        "chat",
-        "vision",
-        "search",
-        "reasoning"
-    ],
-    "gemini-2.5-pro": [
-        "chat",
-        "vision",
-        "search",
-        "reasoning"
-    ],
-    "gemini-2.0-flash": [
-        "chat",
-        "vision"
-    ],
-    "gemini-2.0-flash-exp": [
-        "chat",
-        "vision"
-    ],
-    "gemini-2.0-flash-001": [
-        "chat",
-        "vision"
-    ],
-    "gemini-2.0-flash-lite": [
-        "chat",
-        "vision"
-    ],
-    "gemini-2.0-flash-lite-001": [
-        "chat",
-        "vision"
-    ],
-    "gemini-flash-latest": [
-        "chat",
-        "vision",
-        "reasoning"
-    ],
-    "gemini-flash-lite-latest": [
-        "chat",
-        "vision",
-        "reasoning"
-    ],
-    "gemini-pro-latest": [
-        "chat",
-        "vision",
-        "reasoning"
-    ],
-    "gemini-2.5-flash-lite": [
-        "chat",
-        "vision",
-        "reasoning"
-    ],
-    "gemini-exp-1206": [
-        "chat",
-        "vision",
-        "reasoning"
-    ],
-    "gemini-2.5-flash-preview-tts": [
-        "chat",
-        "tts"
-    ],
-    "gemini-2.5-pro-preview-tts": [
-        "chat",
-        "tts"
-    ],
-    "gemini-2.5-flash-image": [
-        "chat",
-        "vision"
-    ],
-    "gemini-2.5-flash-image-preview": [
-        "chat",
-        "vision"
-    ],
-    "gemini-3-pro-preview": [
-        "chat",
-        "vision",
-        "reasoning"
-    ],
-    "gemini-3-flash-preview": [
-        "chat",
-        "vision",
-        "reasoning"
-    ],
-    "gemini-3-pro-image-preview": [
-        "chat",
-        "vision"
-    ],
-    "nano-banana-pro-preview": [
-        "chat",
-        "vision"
-    ],
-    "gemini-robotics-er-1.5-preview": [
-        "chat",
-        "vision"
-    ],
-    "gemini-2.5-computer-use-preview-10-2025": [
-        "chat",
-        "vision"
-    ],
-    "deep-research-pro-preview-12-2025": [
-        "chat",
-        "reasoning"
-    ],
-    "gemma-3-1b-it": [
-        "chat"
-    ],
-    "gemma-3-4b-it": [
-        "chat"
-    ],
-    "gemma-3-12b-it": [
-        "chat"
-    ],
-    "gemma-3-27b-it": [
-        "chat"
-    ],
-    "gemma-3n-e4b-it": [
-        "chat"
-    ],
-    "gemma-3n-e2b-it": [
-        "chat"
-    ],
-    "llama-3.3-70b-versatile": [
-        "chat"
-    ],
-    "llama-3.1-8b-instant": [
-        "chat"
-    ],
-    "meta-llama/llama-4-scout-17b-16e-instruct": [
-        "chat"
-    ],
-    "meta-llama/llama-4-maverick-17b-128e-instruct": [
-        "chat"
-    ],
-    "meta-llama/llama-guard-4-12b": [
-        "safety"
-    ],
-    "meta-llama/llama-prompt-guard-2-86m": [
-        "safety"
-    ],
-    "meta-llama/llama-prompt-guard-2-22m": [
-        "safety"
-    ],
-    "qwen/qwen3-32b": [
-        "chat",
-        "multilingual"
-    ],
-    "moonshotai/kimi-k2-instruct": [
-        "chat",
-        "search"
-    ],
-    "moonshotai/kimi-k2-instruct-0905": [
-        "chat",
-        "search"
-    ],
-    "groq/compound": [
-        "chat",
-        "search"
-    ],
-    "groq/compound-mini": [
-        "chat",
-        "search"
-    ],
-    "openai/gpt-oss-20b": [
-        "chat"
-    ],
-    "openai/gpt-oss-120b": [
-        "chat"
-    ],
-    "openai/gpt-oss-safeguard-20b": [
-        "safety"
-    ],
-    "whisper-large-v3": [
-        "stt"
-    ],
-    "whisper-large-v3-turbo": [
-        "stt"
-    ],
-    "playai-tts": [
-        "tts"
-    ],
-    "playai-tts-arabic": [
-        "tts",
-        "multilingual"
-    ],
-    "canopylabs/orpheus-arabic-saudi": [
-        "tts",
-        "multilingual"
-    ],
-    "canopylabs/orpheus-v1-english": [
-        "tts"
-    ],
-    "allam-2-7b": [
-        "chat",
-        "multilingual"
-    ]
+  "gemini-2.5-flash": [
+    "chat",
+    "vision",
+    "search",
+    "reasoning",
+    "tooluse"
+  ],
+  "gemini-2.5-pro": [
+    "chat",
+    "vision",
+    "search",
+    "reasoning",
+    "tooluse"
+  ],
+  "gemini-2.0-flash": [
+    "chat",
+    "vision",
+    "search",
+    "tooluse"
+  ],
+  "gemini-2.0-flash-exp": [
+    "chat",
+    "vision",
+    "search",
+    "tooluse"
+  ],
+  "gemini-2.0-flash-001": [
+    "chat",
+    "vision",
+    "search",
+    "tooluse"
+  ],
+  "gemini-2.0-flash-lite": [
+    "chat",
+    "vision",
+    "tooluse"
+  ],
+  "gemini-2.0-flash-lite-001": [
+    "chat",
+    "vision",
+    "tooluse"
+  ],
+  "gemini-flash-latest": [
+    "chat",
+    "vision",
+    "search",
+    "reasoning",
+    "tooluse"
+  ],
+  "gemini-flash-lite-latest": [
+    "chat",
+    "vision",
+    "reasoning",
+    "tooluse",
+    "search"
+  ],
+  "gemini-pro-latest": [
+    "chat",
+    "search",
+    "reasoning",
+    "tooluse",
+    "stt",
+    "safety",
+    "tts"
+  ],
+  "gemini-2.5-flash-lite": [
+    "chat",
+    "vision",
+    "reasoning",
+    "tooluse"
+  ],
+  "gemini-exp-1206": [
+    "chat",
+    "vision",
+    "reasoning",
+    "tooluse"
+  ],
+  "gemini-2.5-flash-preview-tts": [
+    "chat",
+    "tts",
+    "tooluse"
+  ],
+  "gemini-2.5-pro-preview-tts": [
+    "chat",
+    "tts",
+    "tooluse"
+  ],
+  "gemini-2.5-flash-image": [
+    "chat",
+    "vision",
+    "tooluse"
+  ],
+  "gemini-2.5-flash-image-preview": [
+    "chat",
+    "vision",
+    "tooluse"
+  ],
+  "gemini-3-pro-preview": [
+    "chat",
+    "vision",
+    "reasoning",
+    "tooluse"
+  ],
+  "gemini-3-flash-preview": [
+    "chat",
+    "vision",
+    "reasoning",
+    "tooluse"
+  ],
+  "gemini-3-pro-image-preview": [
+    "chat",
+    "vision",
+    "tooluse"
+  ],
+  "nano-banana-pro-preview": [
+    "chat",
+    "vision",
+    "tooluse"
+  ],
+  "gemini-robotics-er-1.5-preview": [
+    "chat",
+    "vision",
+    "tooluse"
+  ],
+  "gemini-2.5-computer-use-preview-10-2025": [
+    "chat",
+    "vision",
+    "tooluse"
+  ],
+  "deep-research-pro-preview-12-2025": [
+    "chat",
+    "reasoning",
+    "search",
+    "tooluse"
+  ],
+  "gemma-3-1b-it": [
+    "chat"
+  ],
+  "gemma-3-4b-it": [
+    "chat",
+    "vision"
+  ],
+  "gemma-3-12b-it": [
+    "chat"
+  ],
+  "gemma-3-27b-it": [
+    "chat"
+  ],
+  "gemma-3n-e4b-it": [
+    "chat"
+  ],
+  "gemma-3n-e2b-it": [
+    "chat"
+  ],
+  "llama-3.3-70b-versatile": [
+    "chat",
+    "reasoning",
+    "tooluse"
+  ],
+  "llama-3.1-8b-instant": [
+    "chat",
+    "tooluse"
+  ],
+  "meta-llama/llama-4-scout-17b-16e-instruct": [
+    "chat",
+    "reasoning",
+    "tooluse"
+  ],
+  "meta-llama/llama-4-maverick-17b-128e-instruct": [
+    "chat",
+    "reasoning",
+    "tooluse"
+  ],
+  "meta-llama/llama-guard-4-12b": [
+    "safety"
+  ],
+  "meta-llama/llama-prompt-guard-2-86m": [
+    "safety"
+  ],
+  "meta-llama/llama-prompt-guard-2-22m": [
+    "safety"
+  ],
+  "qwen/qwen3-32b": [
+    "chat",
+    "reasoning",
+    "tooluse"
+  ],
+  "moonshotai/kimi-k2-instruct": [
+    "chat",
+    "search",
+    "reasoning",
+    "tooluse"
+  ],
+  "moonshotai/kimi-k2-instruct-0905": [
+    "chat",
+    "search",
+    "reasoning",
+    "tooluse"
+  ],
+  "groq/compound": [
+    "chat",
+    "search",
+    "reasoning",
+    "tooluse"
+  ],
+  "groq/compound-mini": [
+    "chat",
+    "search",
+    "reasoning",
+    "tooluse"
+  ],
+  "openai/gpt-oss-20b": [
+    "chat",
+    "tooluse"
+  ],
+  "openai/gpt-oss-120b": [
+    "chat",
+    "reasoning",
+    "tooluse"
+  ],
+  "openai/gpt-oss-safeguard-20b": [
+    "safety"
+  ],
+  "whisper-large-v3": [
+    "stt"
+  ],
+  "whisper-large-v3-turbo": [
+    "stt"
+  ],
+  "playai-tts": [
+    "tts"
+  ],
+  "playai-tts-arabic": [
+    "tts"
+  ],
+  "canopylabs/orpheus-arabic-saudi": [
+    "tts"
+  ],
+  "canopylabs/orpheus-v1-english": [
+    "tts"
+  ],
+  "allam-2-7b": [
+    "chat"
+  ]
 }

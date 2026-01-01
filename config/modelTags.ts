@@ -1,16 +1,15 @@
-/**
- * Available model capability tags
- */
 export const MODEL_TAGS = [
-    { id: 'chat', emoji: '💬', label: 'Chat' },
-    { id: 'vision', emoji: '👁️', label: 'Vision' },
-    { id: 'search', emoji: '🔍', label: 'Search' },
-    { id: 'reasoning', emoji: '🧠', label: 'Reasoning' },
-    { id: 'stt', emoji: '🎤', label: 'STT' },
-    { id: 'tts', emoji: '🔊', label: 'TTS' },
-    { id: 'safety', emoji: '🛡️', label: 'Safety' },
+    { id: 'chat', label: 'Chat' },
+    { id: 'vision', label: 'Vision' },
+    { id: 'reasoning', label: 'Reasoning' },
+    { id: 'search', label: 'Search' },
+    { id: 'tooluse', label: 'Tool Use' },
+    { id: 'stt', label: 'STT' },
+    { id: 'tts', label: 'TTS' },
+    { id: 'safety', label: 'Safety' },
 ] as const;
 
 export type ModelTagId = typeof MODEL_TAGS[number]['id'];
 
-export type ModelTagsMap = Record<string, ModelTagId[]>;
+export const MODEL_TAG_LABELS: Record<ModelTagId, string> =
+    Object.fromEntries(MODEL_TAGS.map(t => [t.id, t.label])) as Record<ModelTagId, string>;

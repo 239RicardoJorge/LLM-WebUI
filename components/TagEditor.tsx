@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { MODEL_TAGS, ModelTagId } from '../config/modelTags';
-import { X } from 'lucide-react';
+import { Save } from 'lucide-react';
 
 interface TagEditorProps {
     modelId: string;
     modelName: string;
+    modelDescription: string;
     currentTags: ModelTagId[];
     onSave: (modelId: string, tags: ModelTagId[]) => void;
     onClose: () => void;
@@ -13,6 +14,7 @@ interface TagEditorProps {
 const TagEditor: React.FC<TagEditorProps> = ({
     modelId,
     modelName,
+    modelDescription,
     currentTags,
     onSave,
     onClose
@@ -37,69 +39,51 @@ const TagEditor: React.FC<TagEditorProps> = ({
     };
 
     return (
-        <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-[fadeIn_0.2s_ease-out]"
-            onClick={onClose}
-            style={{
-                animation: 'fadeIn 0.2s ease-out'
-            }}
-        >
-            <div
-                className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg p-4 w-72 shadow-xl"
-                onClick={e => e.stopPropagation()}
-                style={{
-                    animation: 'scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-                }}
-            >
-                {/* Header */}
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-[var(--text-primary)]">Edit Tags</h3>
-                    <button
-                        onClick={onClose}
-                        className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-                </div>
+        <div className="w-full p-3 rounded-xl border bg-[var(--bg-glass)] border-[var(--border-color)] shadow-lg animate-[slideDown_0.2s_ease-out]">
+            {/* Model Name */}
+            <div className="text-[13px] font-medium tracking-tight text-[var(--text-primary)] mb-1">
+                {modelName}
+            </div>
 
-                {/* Model Name */}
-                <p className="text-xs text-[var(--text-secondary)] mb-3 truncate">{modelName}</p>
+            {/* Description */}
+            <div className="text-[10px] text-[var(--text-secondary)] mb-3">
+                {modelDescription}
+            </div>
 
-                {/* Tags Grid */}
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                    {MODEL_TAGS.map(tag => {
-                        const isSelected = selectedTags.includes(tag.id);
-                        return (
-                            <button
-                                key={tag.id}
-                                onClick={() => toggleTag(tag.id)}
-                                className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-all ${isSelected
-                                    ? 'bg-[var(--accent-color)] text-white'
-                                    : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--border-color)]'
-                                    }`}
-                            >
-                                <span>{tag.emoji}</span>
-                                <span>{tag.label}</span>
-                            </button>
-                        );
-                    })}
-                </div>
+            {/* Tags Grid - Full width for all tags */}
+            <div className="flex flex-wrap gap-1 mb-3">
+                {MODEL_TAGS.map(tag => {
+                    const isSelected = selectedTags.includes(tag.id);
+                    return (
+                        <button
+                            key={tag.id}
+                            onClick={() => toggleTag(tag.id)}
+                            className={`text-[8px] font-medium tracking-wide uppercase px-1.5 py-0.5 rounded transition-all border ${isSelected
+                                ? 'bg-[var(--bg-glass)] text-[var(--text-primary)] border-[var(--border-color)]'
+                                : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border-transparent hover:text-[var(--text-secondary)]'
+                                }`}
+                        >
+                            {tag.label}
+                        </button>
+                    );
+                })}
+            </div>
 
-                {/* Actions */}
-                <div className="flex justify-end gap-2">
-                    <button
-                        onClick={onClose}
-                        className="px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        className="px-3 py-1.5 text-xs bg-[var(--accent-color)] text-white rounded hover:opacity-90 transition-opacity"
-                    >
-                        Save
-                    </button>
-                </div>
+            {/* Actions */}
+            <div className="flex justify-end gap-2">
+                <button
+                    onClick={onClose}
+                    className="px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={handleSave}
+                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-500 bg-[var(--bg-glass)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] hover:border-[var(--button-glow)] hover:shadow-[inset_0_0_8px_var(--button-glow)] border border-[var(--border-color)]"
+                >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Tags</span>
+                </button>
             </div>
         </div>
     );

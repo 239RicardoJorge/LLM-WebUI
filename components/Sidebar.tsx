@@ -34,6 +34,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   // Mount check to suppress hydration animations
   const [mounted, setMounted] = useState(false);
+  const [isEditingTags, setIsEditingTags] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -46,13 +48,16 @@ const Sidebar: React.FC<SidebarProps> = ({
         onClick={onClose}
       />
 
-      <aside className={`
-        fixed inset-y-0 left-0 z-50 w-[300px]
-        flex flex-col bg-[var(--bg-primary)] lg:bg-transparent
-        ${mounted ? 'transition-[transform,background-color,color,border-color] duration-500 cubic-bezier(0.19, 1, 0.22, 1)' : ''}
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        lg:static
-      `}>
+      <aside
+        className={`
+          fixed inset-y-0 left-0 w-[300px]
+          flex flex-col bg-[var(--bg-primary)] lg:bg-transparent
+          ${mounted ? 'transition-[transform,background-color,color,border-color] duration-500 cubic-bezier(0.19, 1, 0.22, 1)' : ''}
+          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          lg:static
+        `}
+        style={{ zIndex: isEditingTags ? 10000 : 50 }}
+      >
         {/* Glass Container */}
         <div className="h-full flex flex-col lg:m-4 lg:glass-panel lg:border-[var(--border-color)] overflow-hidden shadow-2xl relative">
 
@@ -73,6 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               availableModels={availableModels}
               unavailableModels={unavailableModels}
               isRefreshing={isRefreshing}
+              onEditingChange={setIsEditingTags}
             />
 
           </div>
