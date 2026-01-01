@@ -4,9 +4,40 @@ import si from 'systeminformation';
 import dotenv from 'dotenv'; // Added
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import rateLimit from 'express-rate-limit';
 
 dotenv.config();
+
+// Get __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Model tags file path
+const MODEL_TAGS_PATH = join(__dirname, 'data', 'modelTags.json');
+
+// Helper to read model tags
+function readModelTags() {
+    try {
+        if (existsSync(MODEL_TAGS_PATH)) {
+            return JSON.parse(readFileSync(MODEL_TAGS_PATH, 'utf-8'));
+        }
+    } catch (e) {
+        console.error('Error reading model tags:', e);
+    }
+    return {};
+}
+
+// Helper to write model tags
+function writeModelTags(tags) {
+    try {
+        writeFileSync(MODEL_TAGS_PATH, JSON.stringify(tags, null, 2));
+        return true;
+    } catch (e) {
+        console.error('Error writing model tags:', e);
+        return false;
+    }
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001; // Backend Port
@@ -58,7 +89,44 @@ app.get('/api/status', statusLimiter, async (req, res) => {
     }
 });
 
-// API Proxy Endpoint
+// API Endpoint for Model Tags - GET all tags
+app.get('/api/model-tags', (req, res) => {
+    try {
+        const tags = readModelTags();
+        res.json(tags);
+    } catch (error) {
+        console.error('Error reading model tags:', error);
+        res.status(500).json({ error: 'Failed to read model tags' });
+    }
+});
+
+// API Endpoint for Model Tags - PUT (update tags for a model)
+app.put('/api/model-tags', express.json(), (req, res) => {
+    try {
+        const { modelId, tags: modelTags } = req.body;
+
+        if (!modelId || !Array.isArray(modelTags)) {
+            return res.status(400).json({ error: 'Invalid request. Expected { modelId, tags: [] }' });
+        }
+
+        const allTags = readModelTags();
+
+        if (modelTags.length === 0) {
+            delete allTags[modelId];
+        } else {
+            allTags[modelId] = modelTags;
+        }
+
+        if (writeModelTags(allTags)) {
+            res.json({ success: true, modelId, tags: modelTags });
+        } else {
+            res.status(500).json({ error: 'Failed to save model tags' });
+        }
+    } catch (error) {
+        console.error('Error updating model tags:', error);
+        res.status(500).json({ error: 'Failed to update model tags' });
+    }
+});
 app.post('/api/chat', chatLimiter, async (req, res) => {
     const { provider, model, messages, ...rest } = req.body;
     const apiKey = req.headers['x-api-key'] || process.env.API_KEY;

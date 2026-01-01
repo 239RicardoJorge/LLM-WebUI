@@ -19,16 +19,8 @@ export class GroqProvider implements ILLMProvider {
 
             const data = await res.json();
 
-            // Allow all text models, excluding known audio/guardrails
-            // This ensures new models like Qwen appear automatically.
+            // Return all models - filtering is now done via user tags
             return data.data
-                .filter((m: any) => {
-                    const id = m.id.toLowerCase();
-                    return !id.includes('whisper') &&
-                        !id.includes('tts') &&
-                        !id.includes('guard') &&
-                        !id.includes('orpheus');  // TTS models (canopylabs)
-                })
                 .map((m: any) => ({
                     id: m.id,
                     name: this.formatModelName(m.id),
