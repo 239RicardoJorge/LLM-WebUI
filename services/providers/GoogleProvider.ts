@@ -27,7 +27,7 @@ export class GoogleProvider implements ILLMProvider {
 
             if (sourceData.models && Array.isArray(sourceData.models)) {
                 return sourceData.models
-                    // .filter(isGoogleModelAllowed) // Removed as requested by user
+                    .filter(isGoogleModelAllowed)
                     .map((m: any) => ({
                         id: m.name.replace('models/', ''),
                         name: m.displayName || m.name.replace('models/', ''),

@@ -40,6 +40,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         localStorage.setItem('ccs_sidebar_view_mode', viewMode);
     }, [viewMode]);
 
+    // Clean up invalid tags from filters (e.g. if tags are removed from config)
+    useEffect(() => {
+        const validTags = MODEL_TAGS.map(t => t.id);
+        setActiveTagFilters(prev => prev.filter(tag => validTags.includes(tag)));
+    }, []);
+
     // Notify parent when editing state changes
     useEffect(() => {
         onEditingChange?.(!!editingModel);
@@ -126,7 +132,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
             {/* Tag Filter - Horizontal tabs with multi-select */}
             {/* Tag Filter - Horizontal tabs with multi-select */}
             {viewMode !== 'selected' && (
-                <div className="border border-dashed border-[var(--border-color)]/30 rounded-lg p-1.5 mb-2 bg-[var(--bg-glass)]/5">
+                <div className={`border border-dashed border-[var(--border-color)]/30 rounded-lg p-1.5 mb-2 bg-[var(--bg-glass)]/5 ${animateModels ? 'animate-fade-up' : ''}`}>
                     <div className="flex flex-wrap gap-1">
                         {MODEL_TAGS.map(tag => {
                             const isActive = activeTagFilters.includes(tag.id);

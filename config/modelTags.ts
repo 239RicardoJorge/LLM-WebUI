@@ -1,9 +1,6 @@
 export const MODEL_TAGS = [
     { id: 'chat', label: 'Chat' },
     { id: 'vision', label: 'Vision' },
-    { id: 'reasoning', label: 'Reasoning' },
-    { id: 'search', label: 'Search' },
-    { id: 'tooluse', label: 'Tool Use' },
     { id: 'stt', label: 'STT' },
     { id: 'tts', label: 'TTS' },
     { id: 'safety', label: 'Safety' },

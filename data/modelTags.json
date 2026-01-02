@@ -1,138 +1,96 @@
 {
   "gemini-2.5-flash": [
     "chat",
-    "vision",
-    "search",
-    "reasoning",
-    "tooluse"
+    "vision"
   ],
   "gemini-2.5-pro": [
     "chat",
-    "vision",
-    "search",
-    "reasoning",
-    "tooluse"
+    "vision"
   ],
   "gemini-2.0-flash": [
     "chat",
-    "vision",
-    "search",
-    "tooluse"
+    "vision"
   ],
   "gemini-2.0-flash-exp": [
     "chat",
-    "vision",
-    "search",
-    "tooluse"
+    "vision"
   ],
   "gemini-2.0-flash-001": [
     "chat",
-    "vision",
-    "search",
-    "tooluse"
+    "vision"
   ],
   "gemini-2.0-flash-lite": [
     "chat",
-    "vision",
-    "tooluse"
+    "vision"
   ],
   "gemini-2.0-flash-lite-001": [
     "chat",
-    "vision",
-    "tooluse"
+    "vision"
   ],
   "gemini-flash-latest": [
     "chat",
-    "vision",
-    "search",
-    "reasoning",
-    "tooluse"
+    "vision"
   ],
   "gemini-flash-lite-latest": [
     "chat",
-    "vision",
-    "reasoning",
-    "tooluse",
-    "search"
+    "vision"
   ],
   "gemini-pro-latest": [
     "chat",
-    "search",
-    "reasoning",
-    "tooluse",
     "stt",
-    "safety",
-    "tts"
+    "tts",
+    "safety"
   ],
   "gemini-2.5-flash-lite": [
     "chat",
-    "vision",
-    "reasoning",
-    "tooluse"
+    "vision"
   ],
   "gemini-exp-1206": [
     "chat",
-    "vision",
-    "reasoning",
-    "tooluse"
+    "vision"
   ],
   "gemini-2.5-flash-preview-tts": [
     "chat",
-    "tts",
-    "tooluse"
+    "tts"
   ],
   "gemini-2.5-pro-preview-tts": [
     "chat",
-    "tts",
-    "tooluse"
+    "tts"
   ],
   "gemini-2.5-flash-image": [
     "chat",
-    "vision",
-    "tooluse"
+    "vision"
   ],
   "gemini-2.5-flash-image-preview": [
     "chat",
-    "vision",
-    "tooluse"
+    "vision"
   ],
   "gemini-3-pro-preview": [
     "chat",
-    "vision",
-    "reasoning",
-    "tooluse"
+    "vision"
   ],
   "gemini-3-flash-preview": [
     "chat",
-    "vision",
-    "reasoning",
-    "tooluse"
+    "vision"
   ],
   "gemini-3-pro-image-preview": [
     "chat",
-    "vision",
-    "tooluse"
+    "vision"
   ],
   "nano-banana-pro-preview": [
     "chat",
-    "vision",
-    "tooluse"
+    "vision"
   ],
   "gemini-robotics-er-1.5-preview": [
     "chat",
-    "vision",
-    "tooluse"
+    "vision"
   ],
   "gemini-2.5-computer-use-preview-10-2025": [
     "chat",
-    "vision",
-    "tooluse"
+    "vision"
   ],
   "deep-research-pro-preview-12-2025": [
-    "chat",
-    "reasoning",
-    "search",
-    "tooluse"
+    "chat"
   ],
   "gemma-3-1b-it": [
     "chat"
@@ -142,35 +100,32 @@
     "vision"
   ],
   "gemma-3-12b-it": [
-    "chat"
+    "chat",
+    "vision"
   ],
   "gemma-3-27b-it": [
-    "chat"
+    "chat",
+    "vision"
   ],
   "gemma-3n-e4b-it": [
-    "chat"
+    "chat",
+    "vision"
   ],
   "gemma-3n-e2b-it": [
-    "chat"
+    "chat",
+    "vision"
   ],
   "llama-3.3-70b-versatile": [
-    "chat",
-    "reasoning",
-    "tooluse"
+    "chat"
   ],
   "llama-3.1-8b-instant": [
-    "chat",
-    "tooluse"
+    "chat"
   ],
   "meta-llama/llama-4-scout-17b-16e-instruct": [
-    "chat",
-    "reasoning",
-    "tooluse"
+    "chat"
   ],
   "meta-llama/llama-4-maverick-17b-128e-instruct": [
-    "chat",
-    "reasoning",
-    "tooluse"
+    "chat"
   ],
   "meta-llama/llama-guard-4-12b": [
     "safety"
@@ -181,46 +136,30 @@
   "meta-llama/llama-prompt-guard-2-22m": [
     "safety"
   ],
+  "openai/gpt-oss-safeguard-20b": [
+    "safety",
+    "chat"
+  ],
   "qwen/qwen3-32b": [
-    "chat",
-    "reasoning",
-    "tooluse"
+    "chat"
   ],
   "moonshotai/kimi-k2-instruct": [
-    "chat",
-    "search",
-    "reasoning",
-    "tooluse"
+    "chat"
   ],
   "moonshotai/kimi-k2-instruct-0905": [
-    "chat",
-    "search",
-    "reasoning",
-    "tooluse"
+    "chat"
   ],
   "groq/compound": [
-    "chat",
-    "search",
-    "reasoning",
-    "tooluse"
+    "chat"
   ],
   "groq/compound-mini": [
-    "chat",
-    "search",
-    "reasoning",
-    "tooluse"
+    "chat"
   ],
   "openai/gpt-oss-20b": [
-    "chat",
-    "tooluse"
+    "chat"
   ],
   "openai/gpt-oss-120b": [
-    "chat",
-    "reasoning",
-    "tooluse"
-  ],
-  "openai/gpt-oss-safeguard-20b": [
-    "safety"
+    "chat"
   ],
   "whisper-large-v3": [
     "stt"
