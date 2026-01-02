@@ -1,14 +1,20 @@
-import { Attachment, Provider, ModelOption } from "../types";
+import { Attachment, Provider, ModelOption, ChatMessage } from "../types";
 import { ILLMProvider } from "./providers/types";
 import { GoogleProvider } from "./providers/GoogleProvider";
 import { GroqProvider } from "./providers/GroqProvider";
+
+// Static provider instances for validation/availability checks (avoid repeated instantiation)
+const staticProviders: Record<string, ILLMProvider> = {
+    'google': new GoogleProvider(),
+    'groq': new GroqProvider()
+};
 
 export class UnifiedService {
     private currentModel: string;
     private currentProvider: Provider;
     private apiKey: string;
 
-    // Instance of providers
+    // Instance providers for session state (message history)
     private providers: Record<string, ILLMProvider>;
 
     constructor(modelId: string, provider: Provider, apiKey: string) {
@@ -16,7 +22,7 @@ export class UnifiedService {
         this.currentProvider = provider;
         this.apiKey = apiKey;
 
-        // Initialize providers
+        // Initialize providers for session management
         this.providers = {
             'google': new GoogleProvider(),
             'groq': new GroqProvider()
@@ -47,7 +53,7 @@ export class UnifiedService {
         if (p.resetSession) await p.resetSession();
     }
 
-    public setHistory(messages: import("../types").ChatMessage[]) {
+    public setHistory(messages: ChatMessage[]) {
         const p = this.getProvider();
         if (p.setHistory) p.setHistory(messages);
     }
@@ -67,34 +73,23 @@ export class UnifiedService {
         return p;
     }
 
+    /**
+     * Validate API key and get available models.
+     * Uses cached static provider instances to avoid repeated instantiation.
+     */
     public static async validateKeyAndGetModels(provider: Provider, apiKey: string): Promise<ModelOption[]> {
-        // Instantiate specific provider just for validation
-        let p: ILLMProvider;
-        if (provider === 'google') {
-            p = new GoogleProvider();
-        } else if (provider === 'groq') {
-            p = new GroqProvider();
-        } else {
-            return [];
-        }
-
+        const p = staticProviders[provider];
+        if (!p) return [];
         return await p.validateKey(apiKey);
     }
 
+    /**
+     * Check if a specific model is available.
+     * Uses cached static provider instances to avoid repeated instantiation.
+     */
     public static async checkModelAvailability(provider: string, modelId: string, apiKey: string) {
-        // Instantiate specific provider
-        let p: ILLMProvider;
-        if (provider === 'google') {
-            p = new GoogleProvider();
-        } else if (provider === 'groq') {
-            p = new GroqProvider();
-        } else {
-            throw new Error(`Provider ${provider} not found`);
-        }
+        const p = staticProviders[provider];
+        if (!p) throw new Error(`Provider ${provider} not found`);
         return p.checkModelAvailability(modelId, apiKey);
     }
-
-
-
-
 }

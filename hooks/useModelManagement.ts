@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { ModelOption } from '../types';
-import { UnifiedService } from '../services/geminiService';
+import { UnifiedService } from '../services/unifiedService';
 import { useSettingsStore } from '../store/settingsStore';
 import { APP_CONFIG } from '../config/constants';
 

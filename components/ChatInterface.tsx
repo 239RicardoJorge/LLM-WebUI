@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, Suspense } from 'react';
+import React, { useRef, useEffect, useState, Suspense, useCallback } from 'react';
 import { ArrowUp, Menu, Terminal, Paperclip, X, Square, AlertTriangle, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 // Lazy load MarkdownRenderer to split heavy dependencies (react-markdown, remark, katex)
@@ -62,23 +62,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Track previous message length to detect NEW messages
   const prevMessagesLength = useRef(messages.length);
-  const isHypdrating = useRef(true);
+  const isHydratingRef = useRef(true);
 
   // 1. RESTORE SCROLL ON CONTENT UPDATE
   // We monitor messages.length because the container height depends on it.
   React.useLayoutEffect(() => {
     // Only attempt to restore if we are hydrating (initial load of messages)
-    if (isHypdrating.current && messages.length > 0) {
+    if (isHydratingRef.current && messages.length > 0) {
       const savedScroll = localStorage.getItem('ccs_chat_scroll_pos');
 
       if (savedScroll && scrollContainerRef.current) {
         // If we have a saved position, restore it
         scrollContainerRef.current.scrollTop = Number(savedScroll);
-        isHypdrating.current = false; // Hydration done
+        isHydratingRef.current = false; // Hydration done
       } else if (scrollContainerRef.current) {
         // No saved position, default to bottom
         scrollToBottom('auto');
-        isHypdrating.current = false;
+        isHydratingRef.current = false;
       }
     }
   }, [messages.length]);
@@ -86,7 +86,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // 2. AUTO-SCROLL ON NEW MESSAGES (Live interactions)
   useEffect(() => {
     // Only scroll if message count INCREASED AND we are not hydrating
-    if (!isHypdrating.current && messages.length > prevMessagesLength.current) {
+    if (!isHydratingRef.current && messages.length > prevMessagesLength.current) {
       scrollToBottom('smooth');
     }
     prevMessagesLength.current = messages.length;
@@ -99,18 +99,43 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [input]);
 
+  // Extracted handler: Open attachment in new tab
+  const openAttachment = useCallback(async (mimeType: string, data?: string, thumbnail?: string) => {
+    const src = thumbnail || (data ? `data:${mimeType};base64,${data}` : null);
+    if (src) {
+      try {
+        const blob = await (await fetch(src)).blob();
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      } catch (e) {
+        console.error("Failed to open attachment", e);
+      }
+    }
+  }, []);
 
+  // Extracted handler: Open file attachment or show info toast
+  const openFileAttachment = useCallback(async (attachment: Attachment) => {
+    if (attachment.data) {
+      try {
+        const src = `data:${attachment.mimeType};base64,${attachment.data}`;
+        const blob = await (await fetch(src)).blob();
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      } catch (e) {
+        console.error("Failed to open file", e);
+      }
+    } else if (attachment.isActive === false) {
+      toast.info('File not found in context (cleaned up).');
+    }
+  }, []);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    console.log("ChatInterface: handleSubmit called", { input, attachment, isLoading });
 
     if ((!input.trim() && !attachment) || isLoading) {
-      console.warn("ChatInterface: Submission blocked", { inputEmpty: !input.trim(), attachmentMissing: !attachment, isLoading });
       return;
     }
 
-    console.log("ChatInterface: Calling onSendMessage");
     const success = await onSendMessage(input, attachment);
     if (success) {
       setInput('');
@@ -308,19 +333,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                             {/* Card with thumbnail + description */}
                             <div
                               className={`rounded-2xl overflow-hidden border border-[var(--border-color)] shadow-lg max-w-[200px] bg-[var(--bg-primary)]/90 backdrop-blur-2xl cursor-pointer`}
-                              onClick={async () => {
-                                const src = msg.attachment?.thumbnail || (msg.attachment?.data ? `data:${msg.attachment.mimeType};base64,${msg.attachment.data}` : null);
-                                if (src) {
-                                  try {
-                                    const blob = await (await fetch(src)).blob();
-                                    const url = URL.createObjectURL(blob);
-                                    window.open(url, '_blank');
-                                    // setTimeout(() => URL.revokeObjectURL(url), 1000); // Clean up after a delay
-                                  } catch (e) {
-                                    console.error("Failed to open image", e);
-                                  }
-                                }
-                              }}
+                              onClick={() => openAttachment(msg.attachment!.mimeType, msg.attachment!.data, msg.attachment!.thumbnail)}
                             >
                               <div className="relative">
                                 <img
@@ -368,20 +381,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
                             <div
                               className={`p-2 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-2xl shadow-lg flex items-center gap-3 max-w-[280px] ${msg.attachment.isActive === false ? 'opacity-50 grayscale' : ''} ${msg.attachment.data ? 'cursor-pointer' : ''}`}
-                              onClick={async () => {
-                                if (msg.attachment?.data) {
-                                  try {
-                                    const src = `data:${msg.attachment.mimeType};base64,${msg.attachment.data}`;
-                                    const blob = await (await fetch(src)).blob();
-                                    const url = URL.createObjectURL(blob);
-                                    window.open(url, '_blank');
-                                  } catch (e) {
-                                    console.error("Failed to open file", e);
-                                  }
-                                } else if (msg.attachment.isActive === false) {
-                                  toast.info('File not found in context (cleaned up).');
-                                }
-                              }}
+                              onClick={() => openFileAttachment(msg.attachment!)}
                             >
                               <div className="w-12 h-12 rounded-lg bg-[var(--bg-secondary)] overflow-hidden flex items-center justify-center flex-shrink-0">
                                 <span className="text-xl">{getFileTypeIcon(msg.attachment.mimeType)}</span>

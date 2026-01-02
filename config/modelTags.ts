@@ -8,5 +8,7 @@ export const MODEL_TAGS = [
 
 export type ModelTagId = typeof MODEL_TAGS[number]['id'];
 
+export type ModelTagsMap = Record<string, ModelTagId[]>;
+
 export const MODEL_TAG_LABELS: Record<ModelTagId, string> =
     Object.fromEntries(MODEL_TAGS.map(t => [t.id, t.label])) as Record<ModelTagId, string>;

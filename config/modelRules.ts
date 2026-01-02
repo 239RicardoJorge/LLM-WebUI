@@ -1,8 +1,3 @@
-export const GoogleModelRules = {
-    // Methods required for a model to be considered valid
-    requiredMethods: ["generateContent"],
-};
-
 /**
  * Validates a Google model against defined rules
  */
@@ -13,8 +8,6 @@ export const isGoogleModelAllowed = (model: any): boolean => {
 
     return true;
 };
-
-
 
 /**
  * Sorts Google models: Latest first, then Descending alphabetical
@@ -29,18 +22,4 @@ export const sortGoogleModels = (a: any, b: any): number => {
     if (!isLatestA && isLatestB) return 1;
 
     return b.name.localeCompare(a.name); // Descending order
-};
-
-// --- OpenAI Rules ---
-
-export const OpenAIModelRules = {
-    // No restrictions
-};
-
-/**
- * Validates an OpenAI model against defined rules
- */
-export const isOpenAIModelAllowed = (model: any): boolean => {
-    // Allow all models
-    return true;
 };

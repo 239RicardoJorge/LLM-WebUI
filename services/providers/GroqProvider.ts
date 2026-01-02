@@ -52,7 +52,6 @@ export class GroqProvider implements ILLMProvider {
     }
 
     async checkModelAvailability(modelId: string, apiKey: string): Promise<{ available: boolean; error?: string; errorCode?: string }> {
-        console.log(`[GroqProvider] Checking availability for: ${modelId}`);
         try {
             // Do a REAL ping test (like Google) - actually call the model
             const res = await fetch(`${this.BASE_URL}/chat/completions`, {
@@ -68,10 +67,7 @@ export class GroqProvider implements ILLMProvider {
                 })
             });
 
-            console.log(`[GroqProvider] Response status for ${modelId}: ${res.status}`);
-
             if (res.ok) {
-                console.log(`[GroqProvider] ${modelId} is available`);
                 return { available: true };
             }
 
@@ -80,14 +76,11 @@ export class GroqProvider implements ILLMProvider {
             try {
                 const errData = await res.json();
                 errorMessage = errData.error?.message || errorMessage;
-                console.log(`[GroqProvider] Error for ${modelId}: ${errorMessage}`);
             } catch { /* ignore parse errors */ }
 
             const errorCode = categorizeError(errorMessage, res.status);
-            console.log(`[GroqProvider] ${modelId} categorized as: ${errorCode}`);
             return { available: false, error: errorMessage, errorCode };
         } catch (error: any) {
-            console.log(`[GroqProvider] Exception for ${modelId}: ${error.message}`);
             const errorCode = categorizeError(error.message || '');
             return { available: false, error: error.message, errorCode };
         }
@@ -176,7 +169,6 @@ export class GroqProvider implements ILLMProvider {
                 }
             }
         } catch (error: any) {
-            console.error("Groq Stream Error:", error);
             throw error;
         }
     }

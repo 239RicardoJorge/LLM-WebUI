@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { UnifiedService } from './geminiService';
+import { UnifiedService } from './unifiedService';
 import { GoogleProvider } from './providers/GoogleProvider';
 import { GroqProvider } from './providers/GroqProvider';
 

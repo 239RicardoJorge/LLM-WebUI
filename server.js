@@ -180,10 +180,6 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
 
             // Note: If frontend sends 'messages' (OpenAI format) to Google Provider,
             // we would need translation here. But we assume Frontend Provider sends correct format.
-
-            // ADJUSTMENT: GoogleProvider expects slightly different URL structure.
-            // Let's implement specific logic.
-            upstreamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${apiKey}&alt=sse`;
         } else {
             return res.status(400).json({ error: 'Invalid provider' });
         }

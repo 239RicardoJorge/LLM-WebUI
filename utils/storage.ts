@@ -33,7 +33,6 @@ const getDB = (): Promise<IDBDatabase> => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
 
         request.onerror = () => {
-            console.error('IndexedDB error:', request.error);
             reject(request.error);
         };
 
@@ -64,8 +63,6 @@ export const saveMessages = async (conversationId: string, messages: any[]): Pro
         const transaction = db.transaction(STORE_CONVERSATIONS, 'readwrite');
         const store = transaction.objectStore(STORE_CONVERSATIONS);
 
-        // Strip attachment data before saving (only keep thumbnail + metadata)
-        // Strip attachment data before saving (only keep thumbnail + metadata)
         // Strip attachment data before saving (only keep thumbnail + metadata)
         const messagesForStorage = messages.map(msg => {
             if (msg.attachment) {
@@ -105,7 +102,6 @@ export const saveMessages = async (conversationId: string, messages: any[]): Pro
             transaction.onerror = () => reject(transaction.error);
         });
     } catch (error) {
-        console.error('Failed to save messages to IndexedDB:', error);
         // Fallback to localStorage (also strip data)
         const stripped = messages.map(msg => {
             if (msg.attachment) {
@@ -146,7 +142,6 @@ export const loadMessages = async (conversationId: string): Promise<any[]> => {
             request.onerror = () => reject(request.error);
         });
     } catch (error) {
-        console.error('Failed to load messages from IndexedDB:', error);
         // Fallback to localStorage
         try {
             const saved = localStorage.getItem(`ccs_messages_${conversationId}`);
@@ -172,7 +167,6 @@ export const deleteConversation = async (conversationId: string): Promise<void> 
             transaction.onerror = () => reject(transaction.error);
         });
     } catch (error) {
-        console.error('Failed to delete conversation from IndexedDB:', error);
         // Fallback: remove from localStorage
         localStorage.removeItem(`ccs_messages_${conversationId}`);
     }
@@ -189,12 +183,11 @@ export const migrateFromLocalStorage = async (oldKey: string, conversationId: st
             if (messages.length > 0) {
                 await saveMessages(conversationId, messages);
                 localStorage.removeItem(oldKey); // Clean up old data
-                console.log('Migrated messages from localStorage to IndexedDB');
             }
             return messages;
         }
     } catch (error) {
-        console.error('Migration failed:', error);
+        // Migration failed silently
     }
     return [];
 };
@@ -205,9 +198,7 @@ export const migrateFromLocalStorage = async (oldKey: string, conversationId: st
  */
 export const saveMessagesSync = (conversationId: string, messages: any[]): void => {
     // Use localStorage for immediate sync save (beforeunload fallback)
-    // CRITICAL: Strip attachment data to prevent quota errors and ensure originals are not persisted
-    // CRITICAL: Strip attachment data to prevent quota errors and ensure originals are not persisted
-    // CRITICAL: Strip attachment data to prevent quota errors and ensure originals are not persisted
+    // Strip attachment data to prevent quota errors and ensure originals are not persisted
     const stripped = messages.map(msg => {
         if (msg.attachment) {
             // User Rule: 
@@ -245,9 +236,8 @@ export const applyPendingSaves = async (conversationId: string): Promise<void> =
             const messages = JSON.parse(pending);
             await saveMessages(conversationId, messages);
             localStorage.removeItem(pendingKey);
-            console.log('Applied pending sync save to IndexedDB');
         }
     } catch (error) {
-        console.error('Failed to apply pending saves:', error);
+        // Failed to apply pending saves silently
     }
 };

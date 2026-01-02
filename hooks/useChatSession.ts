@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
-import { UnifiedService } from '../services/geminiService';
+import { UnifiedService } from '../services/unifiedService';
 import { ChatMessage, Role, Attachment, ModelOption } from '../types';
 import { useSettingsStore } from '../store/settingsStore';
 import { APP_CONFIG } from '../config/constants';
@@ -47,7 +47,6 @@ export const useChatSession = ({
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const messagesRef = useRef(messages); // Keep ref in sync for beforeunload
     const hasHydratedRef = useRef(false); // Track if hydration is complete
-    const lastSavedMessagesRef = useRef<string>('[]'); // Track last saved state to avoid redundant saves
 
     // Hydrate from IndexedDB on mount
     useEffect(() => {
@@ -57,7 +56,6 @@ export const useChatSession = ({
 
             // Try to load from IndexedDB
             let loaded = await loadMessages(DEFAULT_CONVERSATION_ID);
-            console.log('[CCS] Loaded from IndexedDB:', loaded.length, 'messages');
 
             // Migrate from old localStorage if IndexedDB is empty
             if (loaded.length === 0) {
@@ -67,7 +65,6 @@ export const useChatSession = ({
                 );
             }
 
-            // Restore implicit data for active attachments (persistence restoration)
             // Restore implicit data for active attachments (persistence restoration)
             const processed = loaded.map((msg: ChatMessage) => {
                 // If attachment exists...
@@ -103,9 +100,7 @@ export const useChatSession = ({
             });
 
             setMessages(processed);
-            console.log('[CCS] Hydration complete:', processed.length, 'messages');
             hasHydratedRef.current = true;
-            lastSavedMessagesRef.current = JSON.stringify(processed);
             setIsHydrating(false);
         };
         hydrate();
@@ -129,13 +124,25 @@ export const useChatSession = ({
     };
 
     // Debounced persist to IndexedDB (2000ms)
+    // Uses lightweight change detection instead of JSON.stringify on every render
+    const lastSavedCountRef = useRef(0);
+    const lastSavedTimestampRef = useRef(0);
+
     useEffect(() => {
         // Skip if hydration hasn't completed yet
         if (!hasHydratedRef.current) return;
 
-        // Skip if messages haven't actually changed since last save
-        const currentMessagesJson = JSON.stringify(messages);
-        if (currentMessagesJson === lastSavedMessagesRef.current) return;
+        // Lightweight change detection: check count and last message timestamp
+        const currentCount = messages.length;
+        const currentLastTimestamp = messages.length > 0
+            ? messages[messages.length - 1].timestamp
+            : 0;
+
+        // Skip if nothing changed (same count and same last timestamp)
+        if (currentCount === lastSavedCountRef.current &&
+            currentLastTimestamp === lastSavedTimestampRef.current) {
+            return;
+        }
 
         // Clear any existing timeout
         if (debounceTimeoutRef.current) {
@@ -143,9 +150,9 @@ export const useChatSession = ({
         }
         // Schedule new write to IndexedDB
         debounceTimeoutRef.current = setTimeout(() => {
-            console.log('[CCS] Saving', messages.length, 'messages to IndexedDB');
             saveMessages(DEFAULT_CONVERSATION_ID, messages);
-            lastSavedMessagesRef.current = JSON.stringify(messages);
+            lastSavedCountRef.current = currentCount;
+            lastSavedTimestampRef.current = currentLastTimestamp;
             debounceTimeoutRef.current = null;
         }, 2000);
 
@@ -257,17 +264,8 @@ export const useChatSession = ({
             return false;
         }
 
-        // 5. Check if model supports attachments (text-only models don't)
-        if (attachment && activeModelDef) {
-            const modelName = activeModelDef.id.toLowerCase();
-            // Heuristic: models with 'thinking' or containing 'text' (but not 'text-to') are text-only
-            const isTextOnly = modelName.includes('thinking') ||
-                (modelName.includes('text') && !modelName.includes('text-to'));
-            if (isTextOnly) {
-                toast.error(`This model (${activeModelDef.name}) doesn't support attachments. Please use a multimodal model or remove the attachment.`);
-                return false;
-            }
-        }
+        // Note: We don't pre-check attachment support here. If a model doesn't support
+        // attachments, the API will return an appropriate error that we handle below.
 
         const newUserMsg: ChatMessage = {
             id: Date.now().toString(),

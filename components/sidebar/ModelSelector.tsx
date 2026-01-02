@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import ReactDOM from 'react-dom';
+import React, { useState, useEffect, useRef } from 'react';
 import { ModelOption } from '../../types';
 import { Settings2, ChevronDown, ChevronRight, Zap, Sparkles, Save } from 'lucide-react';
 import { MODEL_TAGS, ModelTagId } from '../../config/modelTags';
@@ -31,10 +30,25 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     const [activeTagFilters, setActiveTagFilters] = useState<ModelTagId[]>([]);
     const [editingModel, setEditingModel] = useState<{ id: string; name: string } | null>(null);
     const [editingTags, setEditingTags] = useState<ModelTagId[]>([]);
-    const [hoveredModel, setHoveredModel] = useState<string | null>(null);
     const [hoveredBall, setHoveredBall] = useState<string | null>(null);
 
     const { getModelTags, setModelTags } = useModelTags();
+
+    const modelRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+    // Scroll to model when selected or editing
+    useEffect(() => {
+        if (editingModel) {
+            // Delay slightly to allow for expansion animation
+            setTimeout(() => {
+                const el = modelRefs.current.get(editingModel.id);
+                el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 250);
+        } else if (currentModel) {
+            const el = modelRefs.current.get(currentModel);
+            el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }, [currentModel, editingModel?.id]);
 
     useEffect(() => {
         localStorage.setItem('ccs_sidebar_view_mode', viewMode);
@@ -130,7 +144,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
             </div>
 
             {/* Tag Filter - Horizontal tabs with multi-select */}
-            {/* Tag Filter - Horizontal tabs with multi-select */}
             {viewMode !== 'selected' && (
                 <div className={`border border-dashed border-[var(--border-color)]/30 rounded-lg p-1.5 mb-2 bg-[var(--bg-glass)]/5 ${animateModels ? 'animate-fade-up' : ''}`}>
                     <div className="flex flex-wrap gap-1">
@@ -182,11 +195,18 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                         const isBallHovered = hoveredBall === model.id;
                         const isEditing = editingModel?.id === model.id;
 
+                        // Pre-compute name parts for efficiency
+                        const nameParts = model.name.trim().split(' ');
+                        const namePrefix = nameParts.slice(0, -1).join(' ');
+                        const nameSuffix = nameParts.slice(-1)[0];
+
                         return (
                             <div
                                 key={model.id}
-                                onMouseEnter={() => setHoveredModel(model.id)}
-                                onMouseLeave={() => setHoveredModel(null)}
+                                ref={(el: HTMLDivElement | null) => {
+                                    if (el) modelRefs.current.set(model.id, el);
+                                    else modelRefs.current.delete(model.id);
+                                }}
                                 className={`relative group ${isEditing ? 'editing-model-card' : ''}`}
                                 style={isEditing ? {
                                     backgroundColor: 'var(--bg-primary)',
@@ -208,9 +228,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                     {/* First row: Name + Status + Ball Container */}
                                     <div className="relative mb-1 flex items-start justify-between min-h-[1.25em]">
                                         <span style={{ lineHeight: '1.25', display: 'block' }} className={`text-[13px] font-medium tracking-tight pr-4 ${isUnavailable ? 'opacity-50 grayscale' : ''} ${isActive || isEditing ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}>
-                                            {model.name.trim().split(' ').slice(0, -1).join(' ')}{model.name.trim().split(' ').length > 1 ? ' ' : ''}
+                                            {namePrefix}{nameParts.length > 1 ? ' ' : ''}
                                             <span className="inline-flex items-center whitespace-nowrap">
-                                                <span>{model.name.trim().split(' ').slice(-1)}</span>
+                                                <span>{nameSuffix}</span>
                                                 <span className={`inline-flex items-center gap-1 ml-1.5 ${isUnavailable ? 'opacity-50 grayscale' : ''}`}>
 
                                                     {isUnavailable ? (
@@ -231,9 +251,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                             </span>
                                         </span>
 
-                                        {/* Ball Container - reserved space, aligned with first line */}
-                                        {/* Line height ~16.25px. 16px container centers nicely with mt-0. */}
-                                        {/* Ball Container - reserved space, aligned with first line */}
+                                        {/* Ball Container - aligned with first line */}
                                         <div
                                             className={`relative shrink-0 w-4 h-4 cursor-pointer z-10 transition-opacity duration-200 ${isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                                             onClick={(e) => {
@@ -309,8 +327,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                         )}
                                     </div>
 
-                                    {/* Action buttons when editing */}
-                                    {/* Action buttons when editing */}
                                     {/* Action buttons when editing - Animated container */}
                                     <div
                                         className={`grid transition-[grid-template-rows] duration-200 ease-out ${isEditing
@@ -354,10 +370,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                     })
                 )}
             </div>
-
-            {/* Dark overlay when editing tags - rendered as portal to cover entire page */}
-
-        </div >
+        </div>
     );
 };
 

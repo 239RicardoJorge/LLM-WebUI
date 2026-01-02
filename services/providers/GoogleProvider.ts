@@ -169,7 +169,6 @@ export class GoogleProvider implements ILLMProvider {
                 }
             }
         }
-        console.log('[GoogleProvider] History restored:', this.messageHistory.length, 'messages');
     }
 
     async resetSession() {
@@ -206,7 +205,6 @@ export class GoogleProvider implements ILLMProvider {
 
             return { available: true };
         } catch (error: any) {
-            console.warn(`[GoogleProvider] Availability check failed for ${modelId}:`, error);
             const errorMessage = error.message || 'Unknown error';
             const errorCode = categorizeError(errorMessage);
             return { available: false, error: errorMessage, errorCode };

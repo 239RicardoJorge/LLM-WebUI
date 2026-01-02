@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Key, ChevronDown, ChevronRight, ExternalLink, RotateCw, CheckCircle2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiKeys } from '../../types';
-import { UnifiedService } from '../../services/geminiService';
+import { UnifiedService } from '../../services/unifiedService';
 import { useSettingsStore } from '../../store/settingsStore';
 import { APP_CONFIG } from '../../config/constants';
 

@@ -35,11 +35,3 @@ export const OpenAIErrorSchema = z.object({
         code: z.string().nullable().optional(),
     }).optional(),
 });
-
-// Generic Availability Check Schema (simplification)
-export const AvailabilityResponseSchema = z.union([
-    z.object({
-        error: z.object({ message: z.string() })
-    }),
-    z.any() // For success cases which vary wildly
-]);
