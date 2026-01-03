@@ -12,25 +12,23 @@ interface MediaStackProps {
 
 const MarqueeText: React.FC<{ text: string }> = ({ text }) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const textRef = useRef<HTMLParagraphElement>(null);
-    const [shouldAnimate, setShouldAnimate] = useState(false);
+    const textRef = useRef<HTMLSpanElement>(null);
+    const [needsScroll, setNeedsScroll] = useState(false);
 
     useEffect(() => {
         if (containerRef.current && textRef.current) {
-            setShouldAnimate(textRef.current.scrollWidth > containerRef.current.clientWidth);
+            setNeedsScroll(textRef.current.scrollWidth > containerRef.current.clientWidth);
         }
     }, [text]);
 
     return (
-        <div ref={containerRef} className="w-full overflow-hidden">
-            <p
+        <div ref={containerRef} className="text-slide-hover w-full">
+            <span
                 ref={textRef}
-                className={`text-xs font-medium text-[var(--text-primary)] leading-tight whitespace-nowrap
-                     transition-[color] duration-500
-                     ${shouldAnimate ? 'group-hover/footer:transition-transform group-hover/footer:duration-[3s] group-hover/footer:ease-linear group-hover/footer:-translate-x-[60%]' : ''}`}
+                className={`text-slide-inner text-xs font-medium text-[var(--text-primary)] leading-tight ${needsScroll ? 'needs-scroll' : ''}`}
             >
                 {text}
-            </p>
+            </span>
         </div>
     );
 };
@@ -118,9 +116,16 @@ const MediaStack: React.FC<MediaStackProps> = ({ attachments, onOpen, align = 'r
         });
     };
 
+    // Dynamic height: base card height (208px) + offset per additional item (3px each)
+    // Plus some padding for the stack effect
+    const baseHeight = 208; // h-40 (160px) + footer (~48px)
+    const stackPadding = Math.max(0, (stackItems.length - 1) * 6); // Extra space for stacked cards
+    const containerHeight = baseHeight + stackPadding;
+
     return (
         <div
-            className={`relative h-52 w-[300px] select-none ${align === 'right' ? 'ml-auto' : 'mr-auto'}`}
+            className={`relative w-[300px] select-none ${align === 'right' ? 'ml-auto' : 'mr-auto'}`}
+            style={{ height: `${containerHeight}px` }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
@@ -136,6 +141,7 @@ const MediaStack: React.FC<MediaStackProps> = ({ attachments, onOpen, align = 'r
                 const imgSrc = showOriginal
                     ? `data:${att.mimeType};base64,${att.data}`
                     : (att.thumbnail || '');
+
 
                 const stackOffset = index * 3;
                 const centerIdx = (total - 1) / 2;
