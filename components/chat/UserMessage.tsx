@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertTriangle, Maximize2 } from 'lucide-react';
 import { ChatMessage, Attachment } from '../../types';
 import MediaStack from '../MediaStack';
+import ErrorBoundary from '../ErrorBoundary';
 import { formatFileSize, formatDuration, getFileTypeIcon } from '../../utils/thumbnails';
 
 interface UserMessageProps {
@@ -39,11 +40,15 @@ const UserMessage: React.FC<UserMessageProps> = ({
                 <div className="flex flex-col gap-2 mb-2 items-end">
                     {/* Visual Stack for > 1 items */}
                     {visualAtts.length > 1 && (
-                        <MediaStack
-                            attachments={visualAtts}
-                            onOpen={(att) => onOpenAttachment(att.mimeType, att.data, att.thumbnail)}
-                            messageId={message.id}
-                        />
+                        <ErrorBoundary fallback={
+                            <div className="p-2 text-xs text-orange-400">Failed to load media</div>
+                        }>
+                            <MediaStack
+                                attachments={visualAtts}
+                                onOpen={(att) => onOpenAttachment(att.mimeType, att.data, att.thumbnail)}
+                                messageId={message.id}
+                            />
+                        </ErrorBoundary>
                     )}
 
                     {/* Individual Visual Item if exactly 1 */}

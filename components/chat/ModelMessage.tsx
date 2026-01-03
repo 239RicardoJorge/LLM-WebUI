@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react';
+import ErrorBoundary from '../ErrorBoundary';
 
 // Lazy load MarkdownRenderer to split heavy dependencies
 const MarkdownRenderer = React.lazy(() => import('../MarkdownRenderer'));
@@ -18,15 +19,21 @@ const ModelMessage: React.FC<ModelMessageProps> = ({ content }) => {
                 <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-primary)]">Response</span>
             </div>
             <div className="prose-container break-words hyphens-auto">
-                <Suspense fallback={
-                    <div className="space-y-3 animate-pulse">
-                        <div className="h-4 bg-[var(--bg-secondary)] rounded w-3/4"></div>
-                        <div className="h-4 bg-[var(--bg-secondary)] rounded w-1/2"></div>
-                        <div className="h-4 bg-[var(--bg-secondary)] rounded w-5/6"></div>
+                <ErrorBoundary fallback={
+                    <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 text-sm">
+                        <p>Failed to render message content</p>
                     </div>
                 }>
-                    <MarkdownRenderer content={content} />
-                </Suspense>
+                    <Suspense fallback={
+                        <div className="space-y-3 animate-pulse">
+                            <div className="h-4 bg-[var(--bg-secondary)] rounded w-3/4"></div>
+                            <div className="h-4 bg-[var(--bg-secondary)] rounded w-1/2"></div>
+                            <div className="h-4 bg-[var(--bg-secondary)] rounded w-5/6"></div>
+                        </div>
+                    }>
+                        <MarkdownRenderer content={content} />
+                    </Suspense>
+                </ErrorBoundary>
             </div>
         </div>
     );

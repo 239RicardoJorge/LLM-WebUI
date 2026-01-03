@@ -245,3 +245,71 @@ export const applyPendingSaves = async (conversationId: string): Promise<void> =
         // Failed to apply pending saves silently
     }
 };
+
+/**
+ * Check if an error is a quota exceeded error
+ */
+export const isQuotaExceeded = (error: unknown): boolean => {
+    if (error instanceof DOMException) {
+        // IndexedDB quota exceeded
+        if (error.name === 'QuotaExceededError') return true;
+        // localStorage quota exceeded
+        if (error.code === 22) return true;
+    }
+    // Some browsers use different error messages
+    const message = error instanceof Error ? error.message.toLowerCase() : '';
+    return message.includes('quota') || message.includes('storage');
+};
+
+/**
+ * Check storage health - verifies IndexedDB and localStorage are accessible
+ */
+export const checkStorageHealth = async (): Promise<{
+    indexedDB: boolean;
+    localStorage: boolean;
+    error?: string;
+}> => {
+    const result = { indexedDB: false, localStorage: false, error: undefined as string | undefined };
+
+    // Check localStorage
+    try {
+        const testKey = '__storage_test__';
+        localStorage.setItem(testKey, 'test');
+        localStorage.removeItem(testKey);
+        result.localStorage = true;
+    } catch (e) {
+        result.error = 'localStorage not available';
+    }
+
+    // Check IndexedDB
+    try {
+        const db = await getDB();
+        result.indexedDB = !!db;
+    } catch (e) {
+        result.error = result.error
+            ? `${result.error}, IndexedDB not available`
+            : 'IndexedDB not available';
+    }
+
+    return result;
+};
+
+/**
+ * Clear corrupted data and reset storage
+ * Use this as a recovery mechanism when data corruption is detected
+ */
+export const clearCorruptedData = async (conversationId: string): Promise<boolean> => {
+    try {
+        // Clear IndexedDB record
+        await deleteConversation(conversationId);
+
+        // Clear any localStorage fallbacks
+        localStorage.removeItem(`ccs_messages_pending_${conversationId}`);
+        localStorage.removeItem(`ccs_chat_scroll_pos`);
+
+        return true;
+    } catch (error) {
+        console.error('Failed to clear corrupted data:', error);
+        return false;
+    }
+};
