@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { ModelTagId, ModelTagsMap } from '../config/modelTags';
 
 const API_URL = '/api/model-tags';
@@ -21,9 +22,11 @@ export function useModelTags() {
             const data = await res.json();
             setTags(data);
             setError(null);
-        } catch (e: any) {
-            console.error('Error fetching model tags:', e);
-            setError(e.message);
+        } catch (e: unknown) {
+            const err = e as Error;
+            console.error('Error fetching model tags:', err);
+            toast.error('Failed to load model tags');
+            setError(err.message);
         } finally {
             setIsLoading(false);
         }
@@ -51,9 +54,11 @@ export function useModelTags() {
             });
 
             return true;
-        } catch (e: any) {
-            console.error('Error updating model tags:', e);
-            setError(e.message);
+        } catch (e: unknown) {
+            const err = e as Error;
+            console.error('Error updating model tags:', err);
+            toast.error('Failed to save model tags');
+            setError(err.message);
             return false;
         }
     }, []);

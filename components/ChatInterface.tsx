@@ -92,6 +92,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         window.open(url, '_blank');
       } catch (e) {
         console.error("Failed to open attachment", e);
+        toast.error('Failed to open attachment');
       }
     } else {
       toast.info('Original file not available (only thumbnail remains).');
@@ -108,6 +109,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         window.open(url, '_blank');
       } catch (e) {
         console.error("Failed to open file", e);
+        toast.error('Failed to open file');
       }
     } else if (attachment.isActive === false) {
       toast.info('File not found in context (cleaned up).');
