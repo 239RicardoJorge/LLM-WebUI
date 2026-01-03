@@ -3,7 +3,21 @@ import { ILLMProvider } from "./providers/types";
 import { GoogleProvider } from "./providers/GoogleProvider";
 import { GroqProvider } from "./providers/GroqProvider";
 
-// Static provider instances for validation/availability checks (avoid repeated instantiation)
+/**
+ * STATIC PROVIDER INSTANCES
+ * 
+ * These are used ONLY for stateless operations:
+ * - validateKeyAndGetModels(): Validates API keys and fetches model lists
+ * - checkModelAvailability(): Pings a model to verify it's accessible
+ * 
+ * They are SAFE because:
+ * 1. Both operations are stateless (don't use/modify message history)
+ * 2. API key is passed as parameter, not stored
+ * 3. No session state is retained between calls
+ * 
+ * For STATEFUL operations (chat sessions with message history),
+ * see `this.providers` in the UnifiedService class constructor.
+ */
 const staticProviders: Record<string, ILLMProvider> = {
     'google': new GoogleProvider(),
     'groq': new GroqProvider()
