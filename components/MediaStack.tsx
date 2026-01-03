@@ -26,7 +26,7 @@ const MarqueeText: React.FC<{ text: string }> = ({ text }) => {
             <p
                 ref={textRef}
                 className={`text-xs font-medium text-[var(--text-primary)] leading-tight whitespace-nowrap
-                     transition-none 
+                     transition-[color] duration-500
                      ${shouldAnimate ? 'group-hover/footer:transition-transform group-hover/footer:duration-[3s] group-hover/footer:ease-linear group-hover/footer:-translate-x-[60%]' : ''}`}
             >
                 {text}
@@ -171,7 +171,7 @@ const MediaStack: React.FC<MediaStackProps> = ({ attachments, onOpen, align = 'r
               absolute top-0 w-48 h-auto flex flex-col
               rounded-2xl border border-[var(--border-color)]
               bg-[var(--bg-primary)] shadow-lg overflow-hidden cursor-pointer
-              transition-[transform,shadow] duration-300 group/footer
+              transition-[transform,shadow] duration-500 group/footer
               ${isTopCard ? 'ring-1 ring-[var(--text-primary)]/20 shadow-[0_20px_50px_rgba(0,0,0,0.2)]' : 'hover:shadow-2xl'}
             `}
                         style={style}
@@ -223,7 +223,7 @@ const MediaStack: React.FC<MediaStackProps> = ({ attachments, onOpen, align = 'r
                             </div>
 
                             <button
-                                className="p-1.5 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors text-[var(--text-primary)]"
+                                className="p-1.5 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors duration-500 text-[var(--text-primary)]"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onOpen(att);

@@ -59,7 +59,7 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ mounted }) => {
                 className={`flex items-center gap-2 w-full group cursor-pointer ${isOpen ? 'mb-4' : 'mb-0'}`}
             >
                 <Cpu className="w-3 h-3 text-green-500" />
-                <span className="flex-1 text-left text-[10px] font-bold tracking-widest text-[var(--text-secondary)] uppercase group-hover:text-[var(--text-primary)] transition-colors duration-300">
+                <span className="flex-1 text-left text-[10px] font-bold tracking-widest text-[var(--text-secondary)] uppercase group-hover:text-[var(--text-primary)] transition-colors duration-500">
                     System Status (Host)
                 </span>
                 {isOpen ? <ChevronDown className="w-3 h-3 text-[var(--text-secondary)]" /> : <ChevronRight className="w-3 h-3 text-[var(--text-secondary)]" />}
@@ -77,7 +77,7 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ mounted }) => {
                             {cpuCores.map((load, idx) => (
                                 <div key={idx} className="relative bg-[var(--bg-secondary)] rounded-md overflow-hidden flex items-end group">
                                     <div
-                                        className={`w-full bg-[var(--cpu-bar)] ${mounted ? 'transition-all duration-500 ease-in-out' : ''}`}
+                                        className={`w-full bg-[var(--cpu-bar)] ${mounted ? 'transition-[height,background-color] duration-500 ease-in-out' : ''}`}
                                         style={{ height: `${load}%` }}
                                     />
                                     {/* Tooltip for specific core */}
@@ -97,7 +97,7 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ mounted }) => {
                         </div>
                         <div className="h-1 w-full bg-blue-500/20 rounded-full overflow-hidden">
                             <div
-                                className={`h-full bg-blue-400 rounded-full shadow-[0_0_10px_rgba(96,165,250,0.3)] ${mounted ? 'transition-all duration-500 ease-in-out' : ''}`}
+                                className={`h-full bg-blue-400 rounded-full shadow-[0_0_10px_rgba(96,165,250,0.3)] ${mounted ? 'transition-[width,box-shadow] duration-500 ease-in-out' : ''}`}
                                 style={{ width: `${ramUsage}%` }}
                             />
                         </div>

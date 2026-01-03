@@ -168,7 +168,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                                     if (onRefreshModels) await onRefreshModels();
                                 }}
                                 className={`
-                        flex items-center justify-center w-10 min-w-[2.5rem] rounded-lg border transition-all duration-500
+                        flex items-center justify-center w-10 min-w-[2.5rem] rounded-lg border transition-[background-color,color,border-color,box-shadow,opacity] duration-500
                         ${validationError
                                         ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
                                         : 'bg-[var(--bg-glass)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] hover:border-[var(--button-glow)] hover:shadow-[inset_0_0_8px_var(--button-glow)] border-[var(--border-color)]'}
@@ -183,7 +183,7 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
                             <button
                                 onClick={handleSaveKeys}
                                 disabled={isSavingKeys}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all duration-500
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-[background-color,color,border-color,box-shadow,opacity] duration-500
                                 ${isSaved
                                         ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                                         : validationError

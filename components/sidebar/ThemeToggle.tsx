@@ -30,9 +30,9 @@ const ThemeToggle: React.FC = () => {
     };
 
     const getIcon = () => {
-        if (theme === 'dark') return <Moon className="w-4 h-4 stroke-[var(--text-secondary)]" />;
-        if (theme === 'light') return <Sun className="w-4 h-4 stroke-[var(--text-secondary)]" />;
-        return <Monitor className="w-4 h-4 stroke-[var(--text-secondary)]" />;
+        if (theme === 'dark') return <Moon className="w-4 h-4 stroke-[var(--text-secondary)] transition-[stroke] duration-500" />;
+        if (theme === 'light') return <Sun className="w-4 h-4 stroke-[var(--text-secondary)] transition-[stroke] duration-500" />;
+        return <Monitor className="w-4 h-4 stroke-[var(--text-secondary)] transition-[stroke] duration-500" />;
     };
 
 

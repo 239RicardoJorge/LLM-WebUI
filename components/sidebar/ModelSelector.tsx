@@ -131,7 +131,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
             <div className="flex items-center justify-between mb-2 w-full">
                 <button
                     onClick={cycleViewMode}
-                    className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex-1 transition-colors"
+                    className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex-1 transition-colors duration-500"
                 >
                     <Settings2 className="w-3 h-3" />
                     <span className={`text-[10px] font-bold tracking-widest uppercase flex-1 text-left ${isRefreshing ? 'animate-pulse' : ''}`}>
@@ -145,15 +145,15 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
 
             {/* Tag Filter - Horizontal tabs with multi-select */}
             {viewMode !== 'selected' && (
-                <div className={`border border-dashed border-[var(--border-color)]/30 rounded-lg p-1.5 mb-2 bg-[var(--bg-glass)]/5 ${animateModels ? 'animate-fade-up' : ''}`}>
-                    <div className="flex flex-wrap gap-1">
+                <div className={`border border-dashed border-[var(--border-color)] rounded-lg p-2 mb-2 bg-[var(--bg-secondary)]/20 transition-[background-color,border-color] duration-500 ${animateModels ? 'animate-fade-up' : ''}`}>
+                    <div className="flex flex-wrap gap-1.5 justify-center">
                         {MODEL_TAGS.map(tag => {
                             const isActive = activeTagFilters.includes(tag.id);
                             return (
                                 <button
                                     key={tag.id}
                                     onClick={() => toggleTagFilter(tag.id)}
-                                    className={`text-[8px] font-medium tracking-wide uppercase px-1 py-[1px] rounded-[3px] border transition-all ${isActive
+                                    className={`text-[8px] font-medium tracking-wide uppercase px-1 py-[1px] rounded-[3px] border transition-[background-color,color,border-color] duration-500 ${isActive
                                         ? 'bg-[var(--bg-depth)] text-[var(--text-secondary)] border-[var(--border-color)]'
                                         : 'bg-transparent text-[var(--text-muted)] border-transparent hover:text-[var(--text-secondary)]'
                                         }`}
@@ -216,7 +216,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                 <div
                                     onClick={() => !isEditing && onModelChange(model.id)}
                                     className={`
-                                      w-full p-3 rounded-xl border text-left relative transition-all duration-300 ease-out cursor-pointer
+                                      w-full p-3 rounded-xl border text-left relative transition-[background-color,border-color,box-shadow,color,opacity,fill,stroke] duration-500 cursor-pointer
                                       ${isActive
                                             ? 'bg-[var(--bg-glass)] border-[var(--border-color)] shadow-lg hover:border-[var(--button-glow)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1),inset_0_0_8px_var(--button-glow)]'
                                             : 'bg-transparent border-transparent hover:bg-[var(--bg-glass)]'}
@@ -235,7 +235,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                 >
                                     {/* First row: Name + Status + Ball Container */}
                                     <div className="relative mb-1 flex items-start justify-between min-h-[1.25em]">
-                                        <span style={{ lineHeight: '1.25', display: 'block' }} className={`text-[13px] font-medium tracking-tight pr-4 ${isUnavailable ? 'opacity-50 grayscale' : ''} ${isActive || isEditing ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}>
+                                        <span style={{ lineHeight: '1.25', display: 'block' }} className={`text-[13px] font-medium tracking-tight pr-4 transition-[color,opacity] duration-500 ${isUnavailable ? 'opacity-50 grayscale' : ''} ${isActive || isEditing ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}>
                                             {namePrefix}{nameParts.length > 1 ? ' ' : ''}
                                             <span className="inline-flex items-center whitespace-nowrap">
                                                 <span>{nameSuffix}</span>
@@ -261,7 +261,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
 
                                         {/* Ball Container - aligned with first line */}
                                         <div
-                                            className={`relative shrink-0 w-4 h-4 cursor-pointer z-10 transition-opacity duration-200 ${isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                                            className={`relative shrink-0 w-4 h-4 cursor-pointer z-10 transition-opacity duration-500 ${isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 if (isEditing) {
@@ -276,7 +276,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                             onMouseLeave={() => setHoveredBall(null)}
                                         >
                                             <div
-                                                className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-300 ease-out ${isActive
+                                                className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-[width,height,background-color,border-color,box-shadow] duration-500 ${isActive
                                                     ? 'bg-[var(--indicator-bg)] border border-[var(--indicator-border)] shadow-[0_0_8px_var(--indicator-bg)]'
                                                     : 'border border-transparent'
                                                     } ${isBallHovered
@@ -288,7 +288,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                     </div>
 
                                     {/* Description */}
-                                    <div className={`text-[10px] mb-2 ${isActive || isEditing ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'} ${isUnavailable ? 'opacity-50 grayscale' : ''} ${isEditing ? '' : 'truncate'}`}>
+                                    <div className={`text-[10px] mb-2 transition-[color,opacity] duration-500 ${isActive || isEditing ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'} ${isUnavailable ? 'opacity-50 grayscale' : ''} ${isEditing ? '' : 'truncate'}`}>
                                         {model.description}
                                     </div>
 
@@ -307,7 +307,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                                                 : [...editingTags, tag.id];
                                                             setEditingTags(newTags);
                                                         }}
-                                                        className={`text-[8px] font-medium tracking-wide uppercase px-1 py-[1px] rounded-[3px] border transition-all ${isSelected
+                                                        className={`text-[8px] font-medium tracking-wide uppercase px-1 py-[1px] rounded-[3px] border transition-[background-color,color,border-color] duration-500 ${isSelected
                                                             ? 'bg-[var(--bg-depth)] text-[var(--text-secondary)] border-[var(--border-color)]'
                                                             : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border-transparent hover:text-[var(--text-secondary)]'
                                                             }`}
@@ -337,14 +337,14 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
 
                                     {/* Action buttons when editing - Animated container */}
                                     <div
-                                        className={`grid transition-[grid-template-rows] duration-200 ease-out ${isEditing
+                                        className={`grid transition-[grid-template-rows] duration-500 ease-out ${isEditing
                                             ? 'grid-rows-[1fr]'
                                             : 'grid-rows-[0fr]'
                                             }`}
                                     >
                                         <div className="overflow-hidden">
                                             <div
-                                                className={`flex justify-end gap-3 pt-2 border-t border-[var(--border-color)] transition-opacity duration-300 ${isEditing ? 'opacity-100' : 'opacity-0'
+                                                className={`flex justify-end gap-3 pt-2 border-t border-[var(--border-color)] transition-opacity duration-500 ${isEditing ? 'opacity-100' : 'opacity-0'
                                                     }`}
                                             >
                                                 <button
@@ -353,7 +353,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                                         setEditingModel(null);
                                                         setEditingTags([]);
                                                     }}
-                                                    className="px-2 py-1.5 text-[10px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                                                    className="px-2 py-1.5 text-[10px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-500"
                                                 >
                                                     Cancel
                                                 </button>
@@ -364,7 +364,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                                         setEditingModel(null);
                                                         setEditingTags([]);
                                                     }}
-                                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--bg-glass)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] hover:border-[var(--button-glow)] hover:shadow-[inset_0_0_8px_var(--button-glow)] border border-[var(--border-color)] transition-all duration-300"
+                                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--bg-glass)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] hover:border-[var(--button-glow)] hover:shadow-[inset_0_0_8px_var(--button-glow)] border border-[var(--border-color)] transition-all duration-500"
                                                 >
                                                     <Save className="w-3 h-3" />
                                                     <span>Save Tags</span>

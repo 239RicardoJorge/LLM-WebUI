@@ -263,7 +263,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           onClick={() => setSidebarOpen(true)}
           className="p-3 bg-[var(--bg-glass)] backdrop-blur-md rounded-full text-[var(--text-secondary)] border border-[var(--border-color)]"
         >
-          <Menu className="w-5 h-5 stroke-[var(--text-secondary)]" />
+          <Menu className="w-5 h-5 stroke-[var(--text-secondary)] transition-[stroke] duration-500" />
         </button>
       </div>
 
@@ -432,7 +432,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                   <div className="min-w-0 flex-1 overflow-hidden">
                                     <div className="w-full overflow-hidden">
                                       <p className={`text-xs font-medium text-[var(--text-primary)] leading-tight whitespace-nowrap
-                                                     transition-none 
+                                                     transition-[color] duration-500
                                                      ${nameOverflows ? 'group-hover/footer:transition-transform group-hover/footer:duration-[3s] group-hover/footer:ease-linear group-hover/footer:-translate-x-[60%]' : ''}`}>
                                         {att.name || 'File'}
                                       </p>
@@ -443,7 +443,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                     </p>
                                   </div>
                                   <button
-                                    className="p-1.5 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors text-[var(--text-primary)]"
+                                    className="p-1.5 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors duration-500 text-[var(--text-primary)]"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       openAttachment(att.mimeType, att.data, att.thumbnail);
@@ -579,7 +579,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 disabled={isLoading}
                 className="m-2 p-3 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-500 relative"
               >
-                <Paperclip className="w-5 h-5 stroke-[var(--text-secondary)]" />
+                <Paperclip className="w-5 h-5 stroke-[var(--text-secondary)] transition-[stroke] duration-500" />
                 {attachments.length > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-full text-[10px] font-bold flex items-center justify-center">
                     {attachments.length}
@@ -602,7 +602,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 onClick={() => isLoading ? onStop() : handleSubmit()}
                 disabled={(!input.trim() && attachments.length === 0 && !isLoading)}
                 className={`
-                    m-2 p-3 rounded-full flex items-center justify-center min-w-[3rem] min-h-[3rem] transition-all duration-500
+                    m-2 p-3 rounded-full flex items-center justify-center min-w-[3rem] min-h-[3rem] transition-[background-color,color,opacity,box-shadow] duration-500
                     ${isLoading
                     ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:scale-105 hover:shadow-[0_0_20px_var(--input-glow)]'
                     : (input.trim() || attachments.length > 0) && !unavailableCode
