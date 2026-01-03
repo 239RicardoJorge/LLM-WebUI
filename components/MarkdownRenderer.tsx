@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -10,7 +10,13 @@ interface MarkdownRendererProps {
   content: string;
 }
 
-const CodeBlock = ({ language, children, className, ...props }: any) => {
+interface CodeBlockProps {
+  language: string;
+  children: ReactNode;
+  className?: string;
+}
+
+const CodeBlock = ({ language, children, className, ...props }: CodeBlockProps) => {
   const [isCopied, setIsCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -65,7 +71,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = React.memo(({ content 
   const [isThinkingOpen, setIsThinkingOpen] = useState(false);
 
   const components = React.useMemo(() => ({
-    code({ node, inline, className, children, ...props }: any) {
+    code({ inline, className, children, ...props }: { inline?: boolean; className?: string; children?: ReactNode }) {
       const match = /language-(\w+)/.exec(className || '')
       return !inline && match ? (
         <CodeBlock language={match[1]} className={className} {...props}>
@@ -77,23 +83,23 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = React.memo(({ content 
         </code>
       )
     },
-    p: ({ children }: any) => <p className="mb-6 last:mb-0 leading-8 text-[17px] font-light tracking-wide text-[var(--text-primary)] transition-colors duration-500">{children}</p>,
-    ul: ({ children }: any) => <ul className="list-disc pl-4 mb-6 space-y-2 text-[var(--text-primary)] marker:text-[var(--text-muted)]">{children}</ul>,
-    ol: ({ children }: any) => <ol className="list-decimal pl-4 mb-6 space-y-2 text-[var(--text-primary)] marker:text-[var(--text-muted)]">{children}</ol>,
-    a: ({ href, children }: any) => (
+    p: ({ children }: { children?: ReactNode }) => <p className="mb-6 last:mb-0 leading-8 text-[17px] font-light tracking-wide text-[var(--text-primary)] transition-colors duration-500">{children}</p>,
+    ul: ({ children }: { children?: ReactNode }) => <ul className="list-disc pl-4 mb-6 space-y-2 text-[var(--text-primary)] marker:text-[var(--text-muted)]">{children}</ul>,
+    ol: ({ children }: { children?: ReactNode }) => <ol className="list-decimal pl-4 mb-6 space-y-2 text-[var(--text-primary)] marker:text-[var(--text-muted)]">{children}</ol>,
+    a: ({ href, children }: { href?: string; children?: ReactNode }) => (
       <a href={href} target="_blank" rel="noopener noreferrer" className="text-[var(--text-primary)] border-b border-[var(--text-muted)] hover:border-[var(--text-primary)] pb-0.5">
         {children}
       </a>
     ),
-    blockquote: ({ children }: any) => (
+    blockquote: ({ children }: { children?: ReactNode }) => (
       <blockquote className="border-l border-[var(--text-muted)] pl-6 italic text-[var(--text-secondary)] my-8 transition-colors duration-500">
         {children}
       </blockquote>
     ),
-    h1: ({ children }: any) => <h1 className="text-3xl font-semibold mb-6 mt-8 text-[var(--text-primary)] tracking-tight transition-colors duration-500">{children}</h1>,
-    h2: ({ children }: any) => <h2 className="text-2xl font-semibold mb-4 mt-8 text-[var(--text-primary)] tracking-tight transition-colors duration-500">{children}</h2>,
-    h3: ({ children }: any) => <h3 className="text-xl font-medium mb-3 mt-6 text-[var(--text-primary)] tracking-tight transition-colors duration-500">{children}</h3>,
-    strong: ({ children }: any) => <strong className="font-semibold text-[var(--text-primary)] transition-colors duration-500">{children}</strong>
+    h1: ({ children }: { children?: ReactNode }) => <h1 className="text-3xl font-semibold mb-6 mt-8 text-[var(--text-primary)] tracking-tight transition-colors duration-500">{children}</h1>,
+    h2: ({ children }: { children?: ReactNode }) => <h2 className="text-2xl font-semibold mb-4 mt-8 text-[var(--text-primary)] tracking-tight transition-colors duration-500">{children}</h2>,
+    h3: ({ children }: { children?: ReactNode }) => <h3 className="text-xl font-medium mb-3 mt-6 text-[var(--text-primary)] tracking-tight transition-colors duration-500">{children}</h3>,
+    strong: ({ children }: { children?: ReactNode }) => <strong className="font-semibold text-[var(--text-primary)] transition-colors duration-500">{children}</strong>
   }), []);
 
   return (

@@ -12,9 +12,11 @@ const STORE_CONVERSATIONS = 'conversations';
 // Default conversation ID (for now, single conversation)
 export const DEFAULT_CONVERSATION_ID = 'default';
 
+import { ChatMessage, Attachment } from '../types';
+
 interface ConversationRecord {
     id: string;
-    messages: any[];
+    messages: ChatMessage[];
     updatedAt: number;
 }
 
@@ -57,7 +59,7 @@ const getDB = (): Promise<IDBDatabase> => {
  * Note: Strips attachment.data (base64 content) to keep storage small
  * Only thumbnails and metadata are persisted
  */
-export const saveMessages = async (conversationId: string, messages: any[]): Promise<void> => {
+export const saveMessages = async (conversationId: string, messages: ChatMessage[]): Promise<void> => {
     try {
         const db = await getDB();
         const transaction = db.transaction(STORE_CONVERSATIONS, 'readwrite');
@@ -65,7 +67,7 @@ export const saveMessages = async (conversationId: string, messages: any[]): Pro
 
         // Strip attachment data before saving (only keep thumbnail + metadata)
         // Helper function to strip data from a single attachment
-        const stripAttachmentData = (attachment: any) => {
+        const stripAttachmentData = (attachment: Attachment): Attachment => {
             if (attachment.mimeType.startsWith('image/')) {
                 const { data, ...attachmentMeta } = attachment;
                 return { ...attachmentMeta, isActive: true };
@@ -106,7 +108,7 @@ export const saveMessages = async (conversationId: string, messages: any[]): Pro
         });
     } catch (error) {
         // Fallback to localStorage (also strip data using the same helper)
-        const stripFallback = (attachment: any) => {
+        const stripFallback = (attachment: Attachment): Attachment => {
             if (attachment.mimeType.startsWith('image/')) {
                 const { data, ...meta } = attachment;
                 return { ...meta, isActive: true };
@@ -136,7 +138,7 @@ export const saveMessages = async (conversationId: string, messages: any[]): Pro
 /**
  * Load messages for a conversation
  */
-export const loadMessages = async (conversationId: string): Promise<any[]> => {
+export const loadMessages = async (conversationId: string): Promise<ChatMessage[]> => {
     try {
         const db = await getDB();
         const transaction = db.transaction(STORE_CONVERSATIONS, 'readonly');
@@ -184,7 +186,7 @@ export const deleteConversation = async (conversationId: string): Promise<void> 
 /**
  * Migrate localStorage messages to IndexedDB (one-time migration)
  */
-export const migrateFromLocalStorage = async (oldKey: string, conversationId: string): Promise<any[]> => {
+export const migrateFromLocalStorage = async (oldKey: string, conversationId: string): Promise<ChatMessage[]> => {
     try {
         const saved = localStorage.getItem(oldKey);
         if (saved) {
@@ -205,9 +207,9 @@ export const migrateFromLocalStorage = async (oldKey: string, conversationId: st
  * Sync save (for beforeunload) - uses localStorage as fallback
  * IndexedDB is async and may not complete before page unload
  */
-export const saveMessagesSync = (conversationId: string, messages: any[]): void => {
+export const saveMessagesSync = (conversationId: string, messages: ChatMessage[]): void => {
     // Helper function to strip data from a single attachment
-    const stripAttachmentData = (attachment: any) => {
+    const stripAttachmentData = (attachment: Attachment): Attachment => {
         if (attachment.mimeType.startsWith('image/')) {
             const { data, ...attachmentMeta } = attachment;
             return { ...attachmentMeta, isActive: true };

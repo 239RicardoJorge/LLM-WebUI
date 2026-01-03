@@ -43,3 +43,61 @@ export interface ApiKeys {
   google: string;
   groq: string;
 }
+
+// ============================================
+// Google API Types
+// ============================================
+
+/** Google model information from the models list API */
+export interface GoogleModelInfo {
+  name: string;
+  displayName?: string;
+  description?: string;
+  supportedGenerationMethods?: string[];
+  outputTokenLimit?: number;
+  inputTokenLimit?: number;
+}
+
+/** Google content part - can be text or inline data (image/video) */
+export interface GoogleContentPart {
+  text?: string;
+  inlineData?: {
+    mimeType: string;
+    data: string;
+  };
+}
+
+/** Google message format for chat history */
+export interface GoogleMessage {
+  role: 'user' | 'model';
+  parts: GoogleContentPart[];
+}
+
+/** Google API request payload */
+export interface GoogleApiPayload {
+  provider: 'google';
+  model: string;
+  contents: GoogleMessage[];
+  generationConfig?: {
+    maxOutputTokens?: number;
+  };
+  systemInstruction?: {
+    parts: { text: string }[];
+  };
+}
+
+// ============================================
+// Groq API Types
+// ============================================
+
+/** Groq/OpenAI-compatible message format */
+export interface GroqMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+/** Groq model information from models API */
+export interface GroqModelInfo {
+  id: string;
+  context_window?: number;
+}

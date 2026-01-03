@@ -1,5 +1,5 @@
 import { ILLMProvider } from "./types";
-import { ChatMessage, Attachment, ModelOption, Provider } from "../../types";
+import { ChatMessage, Attachment, ModelOption, Provider, GroqModelInfo, GroqMessage } from "../../types";
 import { categorizeError } from "../../utils/errorCategorization";
 
 export class GroqProvider implements ILLMProvider {
@@ -21,7 +21,7 @@ export class GroqProvider implements ILLMProvider {
 
             // Return all models - filtering is now done via user tags
             return data.data
-                .map((m: any) => ({
+                .map((m: GroqModelInfo) => ({
                     id: m.id,
                     name: this.formatModelName(m.id),
                     description: `Groq - ${m.id}`,
@@ -80,9 +80,10 @@ export class GroqProvider implements ILLMProvider {
 
             const errorCode = categorizeError(errorMessage, res.status);
             return { available: false, error: errorMessage, errorCode };
-        } catch (error: any) {
-            const errorCode = categorizeError(error.message || '');
-            return { available: false, error: error.message, errorCode };
+        } catch (error: unknown) {
+            const err = error as Error;
+            const errorCode = categorizeError(err.message || '');
+            return { available: false, error: err.message, errorCode };
         }
     }
 
@@ -95,7 +96,7 @@ export class GroqProvider implements ILLMProvider {
         signal?: AbortSignal
     ): AsyncGenerator<string, void, unknown> {
 
-        const messages: any[] = [];
+        const messages: GroqMessage[] = [];
 
         // 1. System Prompt
         if (systemInstruction) {
@@ -168,7 +169,7 @@ export class GroqProvider implements ILLMProvider {
                     }
                 }
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             throw error;
         }
     }

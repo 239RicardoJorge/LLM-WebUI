@@ -1,7 +1,9 @@
+import { GoogleModelInfo } from '../types';
+
 /**
  * Validates a Google model against defined rules
  */
-export const isGoogleModelAllowed = (model: any): boolean => {
+export const isGoogleModelAllowed = (model: GoogleModelInfo): boolean => {
     // 1. Check Capabilities
     const hasGenerateContent = model.supportedGenerationMethods?.includes("generateContent");
     if (!hasGenerateContent) return false;
@@ -12,7 +14,7 @@ export const isGoogleModelAllowed = (model: any): boolean => {
 /**
  * Sorts Google models: Latest first, then Descending alphabetical
  */
-export const sortGoogleModels = (a: any, b: any): number => {
+export const sortGoogleModels = (a: GoogleModelInfo, b: GoogleModelInfo): number => {
     const nameA = a.name.toLowerCase();
     const nameB = b.name.toLowerCase();
     const isLatestA = nameA.includes("latest");

@@ -1,4 +1,4 @@
-import { Attachment, ModelOption } from "../../types";
+import { Attachment, ModelOption, GoogleContentPart, GoogleMessage, GoogleApiPayload, GoogleModelInfo, ChatMessage } from "../../types";
 import { ILLMProvider } from "./types";
 import { isGoogleModelAllowed, sortGoogleModels } from "../../config/modelRules";
 import { GoogleModelListSchema } from "../schemas";
@@ -8,7 +8,7 @@ export class GoogleProvider implements ILLMProvider {
     readonly id = 'google';
     // Google uses 'parts' structure usually, but we can store it normalized or raw.
     // Let's store raw Google Content structure for simplicity in sending to API.
-    private messageHistory: { role: string, parts: { text?: string, inlineData?: any }[] }[] = [];
+    private messageHistory: GoogleMessage[] = [];
 
     async validateKey(apiKey: string): Promise<ModelOption[]> {
         if (!apiKey) return [];
@@ -28,7 +28,7 @@ export class GoogleProvider implements ILLMProvider {
             if (sourceData.models && Array.isArray(sourceData.models)) {
                 return sourceData.models
                     .filter(isGoogleModelAllowed)
-                    .map((m: any) => ({
+                    .map((m: GoogleModelInfo) => ({
                         id: m.name.replace('models/', ''),
                         name: m.displayName || m.name.replace('models/', ''),
                         description: m.description || "Google Gemini Model",
@@ -37,9 +37,10 @@ export class GoogleProvider implements ILLMProvider {
                     }))
                     .sort(sortGoogleModels);
             }
-        } catch (e: any) {
-            console.warn(`Validation failed for google:`, e);
-            if (e.message === "Invalid API Key") throw e;
+        } catch (e: unknown) {
+            const err = e as Error;
+            console.warn(`Validation failed for google:`, err);
+            if (err.message === "Invalid API Key") throw e;
         }
         return [];
     }
@@ -54,7 +55,7 @@ export class GoogleProvider implements ILLMProvider {
     ): AsyncGenerator<string, void, unknown> {
 
         // Construct new user message
-        let parts: any[] = [];
+        const parts: GoogleContentPart[] = [];
 
         // Add all attachments as inline data
         if (attachments && attachments.length > 0) {
@@ -72,7 +73,7 @@ export class GoogleProvider implements ILLMProvider {
         // Actually, v1beta uses 'systemInstruction' field at top level?
         // Let's put it in the body if present.
 
-        const payload: any = {
+        const payload: GoogleApiPayload = {
             provider: 'google',
             model: modelId,
             contents: this.messageHistory,
@@ -156,7 +157,7 @@ export class GoogleProvider implements ILLMProvider {
         this.messageHistory = [];
         for (const msg of messages) {
             if (msg.role === 'user') {
-                const parts: any[] = [];
+                const parts: GoogleContentPart[] = [];
 
                 // Handle new attachments array (if present)
                 if (msg.attachments && Array.isArray(msg.attachments)) {
@@ -219,8 +220,9 @@ export class GoogleProvider implements ILLMProvider {
             }
 
             return { available: true };
-        } catch (error: any) {
-            const errorMessage = error.message || 'Unknown error';
+        } catch (error: unknown) {
+            const err = error as Error;
+            const errorMessage = err.message || 'Unknown error';
             const errorCode = categorizeError(errorMessage);
             return { available: false, error: errorMessage, errorCode };
         }
