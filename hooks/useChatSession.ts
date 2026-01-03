@@ -66,37 +66,39 @@ export const useChatSession = ({
             }
 
             // Restore implicit data for active attachments (persistence restoration)
-            const processed = loaded.map((msg: ChatMessage) => {
-                // If attachment exists...
-                if (msg.attachment) {
-                    // Check if it is an image
-                    if (msg.attachment.mimeType.startsWith('image/')) {
-                        // Restore thumbnail to data if data is missing
-                        if (!msg.attachment.data && msg.attachment.thumbnail) {
-                            try {
-                                const thumbnailBase64 = msg.attachment.thumbnail.split(',')[1];
-                                return {
-                                    ...msg,
-                                    attachment: {
-                                        ...msg.attachment,
-                                        isActive: true, // Always active for thumbs
-                                        isThumbnail: true, // Flag to indicate we're using thumbnail
-                                        data: thumbnailBase64
-                                    }
-                                };
-                            } catch (e) {
-                                console.error('Failed to restore thumbnail context:', e);
-                                return msg;
-                            }
-                        }
-                    } else {
-                        // Non-image attachments:
-                        // They are Active=False and Data is stripped in storage.
-                        // We just pass them through so UI can show the "greyed out" metadata.
-                        return msg;
+            // Helper to restore a single attachment
+            // NOTE: We do NOT copy thumbnail to data anymore - that was causing issues!
+            // The data field should be undefined after reload, and thumbnail should be used for display.
+            const restoreAttachment = (att: Attachment): Attachment => {
+                if (att.mimeType.startsWith('image/') || att.mimeType.startsWith('video/')) {
+                    // If data is missing, the original was not persisted (as expected)
+                    // Mark as thumbnail mode for display logic
+                    if (!att.data && att.thumbnail) {
+                        return {
+                            ...att,
+                            isActive: false,  // Mark as inactive (original not in memory)
+                            isThumbnail: true // Flag that we're showing thumbnail
+                            // Note: data remains undefined - do NOT copy thumbnail here!
+                        };
                     }
                 }
-                return msg;
+                return att;
+            };
+
+            const processed = loaded.map((msg: ChatMessage) => {
+                let result = { ...msg };
+
+                // Handle new attachments array
+                if (msg.attachments && Array.isArray(msg.attachments)) {
+                    result.attachments = msg.attachments.map(restoreAttachment);
+                }
+
+                // Handle legacy single attachment
+                if (msg.attachment) {
+                    result.attachment = restoreAttachment(msg.attachment);
+                }
+
+                return result;
             });
 
             setMessages(processed);
@@ -225,9 +227,9 @@ export const useChatSession = ({
         }
     };
 
-    const handleSendMessage = async (content: string, attachment?: Attachment): Promise<boolean> => {
+    const handleSendMessage = async (content: string, attachments?: Attachment[]): Promise<boolean> => {
         // 1. Basic Content Check
-        if (!content.trim() && !attachment) return false;
+        if (!content.trim() && (!attachments || attachments.length === 0)) return false;
 
         // 2. Generic API Key Check
         const hasAnyKey = !!apiKeys.google || !!apiKeys.groq;
@@ -272,7 +274,7 @@ export const useChatSession = ({
             role: Role.USER,
             content,
             timestamp: Date.now(),
-            attachment: attachment
+            attachments: attachments && attachments.length > 0 ? attachments : undefined
         };
 
         setMessages(prev => [...prev, newUserMsg]);
@@ -296,7 +298,8 @@ export const useChatSession = ({
                 });
             }
 
-            const stream = serviceRef.current.sendMessageStream(content, attachment, controller.signal);
+            const stream = serviceRef.current.sendMessageStream(content, attachments, controller.signal);
+
 
             for await (const chunk of stream) {
                 if (!botMsgId) {

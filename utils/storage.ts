@@ -64,29 +64,32 @@ export const saveMessages = async (conversationId: string, messages: any[]): Pro
         const store = transaction.objectStore(STORE_CONVERSATIONS);
 
         // Strip attachment data before saving (only keep thumbnail + metadata)
-        const messagesForStorage = messages.map(msg => {
-            if (msg.attachment) {
-                // User Rule: 
-                // 1. Images (thumbnails): Persist as ACTIVE (isActive=true).
-                // 2. Non-Images: Persist as INACTIVE (isActive=false) and remove DATA. 
-                //    (Metadata kept for history, but file is "dead")
-
-                if (msg.attachment.mimeType.startsWith('image/')) {
-                    const { data, ...attachmentMeta } = msg.attachment;
-                    return {
-                        ...msg,
-                        attachment: { ...attachmentMeta, isActive: true }
-                    };
-                } else {
-                    // Non-images: Keep metadata, STRIP data, set INACTIVE
-                    const { data, ...attachmentMeta } = msg.attachment;
-                    return {
-                        ...msg,
-                        attachment: { ...attachmentMeta, isActive: false }
-                    };
-                }
+        // Helper function to strip data from a single attachment
+        const stripAttachmentData = (attachment: any) => {
+            if (attachment.mimeType.startsWith('image/')) {
+                const { data, ...attachmentMeta } = attachment;
+                return { ...attachmentMeta, isActive: true };
+            } else {
+                // Non-images: Keep metadata, STRIP data, set INACTIVE
+                const { data, ...attachmentMeta } = attachment;
+                return { ...attachmentMeta, isActive: false };
             }
-            return msg;
+        };
+
+        const messagesForStorage = messages.map(msg => {
+            let result = { ...msg };
+
+            // Handle new attachments array
+            if (msg.attachments && Array.isArray(msg.attachments)) {
+                result.attachments = msg.attachments.map(stripAttachmentData);
+            }
+
+            // Handle legacy single attachment
+            if (msg.attachment) {
+                result.attachment = stripAttachmentData(msg.attachment);
+            }
+
+            return result;
         });
 
         const record: ConversationRecord = {
@@ -102,23 +105,29 @@ export const saveMessages = async (conversationId: string, messages: any[]): Pro
             transaction.onerror = () => reject(transaction.error);
         });
     } catch (error) {
-        // Fallback to localStorage (also strip data)
-        const stripped = messages.map(msg => {
-            if (msg.attachment) {
-                const { data, ...meta } = msg.attachment;
-                // Replicate logic for fallback
-                let shouldPersistActive = msg.attachment.isActive;
-                if (msg.attachment.isActive && msg.attachment.data && msg.attachment.thumbnail) {
-                    try {
-                        const thumbData = msg.attachment.thumbnail.split(',')[1];
-                        if (msg.attachment.data !== thumbData) {
-                            shouldPersistActive = false;
-                        }
-                    } catch (e) { shouldPersistActive = false; }
-                }
-                return { ...msg, attachment: { ...meta, isActive: shouldPersistActive } };
+        // Fallback to localStorage (also strip data using the same helper)
+        const stripFallback = (attachment: any) => {
+            if (attachment.mimeType.startsWith('image/')) {
+                const { data, ...meta } = attachment;
+                return { ...meta, isActive: true };
+            } else {
+                const { data, ...meta } = attachment;
+                return { ...meta, isActive: false };
             }
-            return msg;
+        };
+
+        const stripped = messages.map(msg => {
+            let result = { ...msg };
+
+            if (msg.attachments && Array.isArray(msg.attachments)) {
+                result.attachments = msg.attachments.map(stripFallback);
+            }
+
+            if (msg.attachment) {
+                result.attachment = stripFallback(msg.attachment);
+            }
+
+            return result;
         });
         localStorage.setItem(`ccs_messages_${conversationId}`, JSON.stringify(stripped));
     }
@@ -197,30 +206,34 @@ export const migrateFromLocalStorage = async (oldKey: string, conversationId: st
  * IndexedDB is async and may not complete before page unload
  */
 export const saveMessagesSync = (conversationId: string, messages: any[]): void => {
+    // Helper function to strip data from a single attachment
+    const stripAttachmentData = (attachment: any) => {
+        if (attachment.mimeType.startsWith('image/')) {
+            const { data, ...attachmentMeta } = attachment;
+            return { ...attachmentMeta, isActive: true };
+        } else {
+            // Non-images: Keep metadata, STRIP data, set INACTIVE
+            const { data, ...attachmentMeta } = attachment;
+            return { ...attachmentMeta, isActive: false };
+        }
+    };
+
     // Use localStorage for immediate sync save (beforeunload fallback)
     // Strip attachment data to prevent quota errors and ensure originals are not persisted
     const stripped = messages.map(msg => {
-        if (msg.attachment) {
-            // User Rule: 
-            // 1. Images (thumbnails): Persist as ACTIVE (isActive=true).
-            // 2. Non-Images: Persist as INACTIVE (isActive=false) and remove DATA.
+        let result = { ...msg };
 
-            if (msg.attachment.mimeType.startsWith('image/')) {
-                const { data, ...attachmentMeta } = msg.attachment;
-                return {
-                    ...msg,
-                    attachment: { ...attachmentMeta, isActive: true }
-                };
-            } else {
-                // Non-images: Keep metadata, STRIP data, set INACTIVE
-                const { data, ...attachmentMeta } = msg.attachment;
-                return {
-                    ...msg,
-                    attachment: { ...attachmentMeta, isActive: false }
-                };
-            }
+        // Handle new attachments array
+        if (msg.attachments && Array.isArray(msg.attachments)) {
+            result.attachments = msg.attachments.map(stripAttachmentData);
         }
-        return msg;
+
+        // Handle legacy single attachment
+        if (msg.attachment) {
+            result.attachment = stripAttachmentData(msg.attachment);
+        }
+
+        return result;
     });
     localStorage.setItem(`ccs_messages_pending_${conversationId}`, JSON.stringify(stripped));
 };

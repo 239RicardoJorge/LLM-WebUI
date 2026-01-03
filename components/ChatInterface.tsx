@@ -1,9 +1,10 @@
 import React, { useRef, useEffect, useState, Suspense, useCallback } from 'react';
-import { ArrowUp, Menu, Terminal, Paperclip, X, Square, AlertTriangle, ExternalLink } from 'lucide-react';
+import { ArrowUp, Menu, Terminal, Paperclip, X, Square, AlertTriangle, ExternalLink, Maximize2 } from 'lucide-react';
 import { toast } from 'sonner';
 // Lazy load MarkdownRenderer to split heavy dependencies (react-markdown, remark, katex)
 const MarkdownRenderer = React.lazy(() => import('./MarkdownRenderer'));
 import { ChatMessage, Role, Attachment } from '../types';
+import MediaStack from './MediaStack';
 import {
   validateFileSize,
   processAttachment,
@@ -16,7 +17,7 @@ interface ChatInterfaceProps {
   messages: ChatMessage[];
   isLoading: boolean;
   isHydrating?: boolean;
-  onSendMessage: (message: string, attachment?: Attachment) => Promise<boolean>;
+  onSendMessage: (message: string, attachments?: Attachment[]) => Promise<boolean>;
   onStop: () => void;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
@@ -36,7 +37,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   unavailableMessage
 }) => {
   const [input, setInput] = useState('');
-  const [attachment, setAttachment] = useState<Attachment | undefined>(undefined);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
 
   // Track initial message count to only animate NEW messages
   const [initialMessageCount] = useState(messages.length);
@@ -99,9 +100,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [input]);
 
+  // Helper to get attachments from a message (supports both new 'attachments' array and legacy 'attachment' field)
+  const getMessageAttachments = useCallback((msg: ChatMessage): Attachment[] => {
+    if (msg.attachments && msg.attachments.length > 0) {
+      return msg.attachments;
+    }
+    if (msg.attachment) {
+      return [msg.attachment];
+    }
+    return [];
+  }, []);
+
   // Extracted handler: Open attachment in new tab
+  // IMPORTANT: Prioritize original data over thumbnail for fullscreen/download
   const openAttachment = useCallback(async (mimeType: string, data?: string, thumbnail?: string) => {
-    const src = thumbnail || (data ? `data:${mimeType};base64,${data}` : null);
+    // Use original data if available, fallback to thumbnail only if data is missing
+    const src = data
+      ? `data:${mimeType};base64,${data}`
+      : (thumbnail || null);
+
     if (src) {
       try {
         const blob = await (await fetch(src)).blob();
@@ -110,6 +127,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       } catch (e) {
         console.error("Failed to open attachment", e);
       }
+    } else {
+      toast.info('Original file not available (only thumbnail remains).');
     }
   }, []);
 
@@ -132,14 +151,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
 
-    if ((!input.trim() && !attachment) || isLoading) {
+    if ((!input.trim() && attachments.length === 0) || isLoading) {
       return;
     }
 
-    const success = await onSendMessage(input, attachment);
+    const success = await onSendMessage(input, attachments);
     if (success) {
       setInput('');
-      setAttachment(undefined);
+      setAttachments([]);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
     }
   };
@@ -150,35 +169,47 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       handleSubmit();
     }
   };
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    // Capture files IMMEDIATELY into an array before resetting the input
+    // FileList can be live, so clearing input might clear this reference in some browsers
+    const rawFiles = e.target.files;
+    if (!rawFiles || rawFiles.length === 0) return;
+
+    const fileArray = Array.from(rawFiles);
 
     // Reset input immediately to allow re-selecting same file
     if (fileInputRef.current) fileInputRef.current.value = '';
 
-    // Validate file size
-    const validation = validateFileSize(file);
-    if (!validation.valid) {
-      toast.error(validation.error);
-      return;
-    }
-    if (validation.warning) {
-      toast.warning(validation.warning);
-    }
+    // Process each file wrapped in a promise
+    const processFile = async (file: File): Promise<Attachment | null> => {
+      // Validate file size
+      const validation = validateFileSize(file);
+      if (!validation.valid) {
+        toast.error(`${file.name}: ${validation.error}`);
+        return null;
+      }
+      if (validation.warning) {
+        toast.warning(`${file.name}: ${validation.warning}`);
+      }
 
-    try {
-      // Process file and generate thumbnail
-      const meta = await processAttachment(file);
+      try {
+        // Process file and generate thumbnail
+        const meta = await processAttachment(file);
 
-      // Read file content as base64 for API
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64Data = event.target?.result as string;
-        const base64Content = base64Data.split(',')[1];
+        // Read file content as base64 for API (wrapped in promise)
+        const base64Content = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const base64Data = event.target?.result as string;
+            resolve(base64Data.split(',')[1]);
+          };
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(file);
+        });
 
-        setAttachment({
-          mimeType: file.type,
+        return {
+          mimeType: file.type || 'application/octet-stream',
           data: base64Content,
           name: meta.name,
           size: meta.size,
@@ -186,20 +217,33 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           duration: meta.duration,
           dimensions: meta.dimensions,
           isActive: true
-        });
-      };
-      reader.onerror = () => {
-        toast.error('Failed to read file. Please try again.');
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error('File processing error:', error);
-      toast.error('Failed to process file. Please try a different file.');
+        };
+      } catch (error) {
+        console.error('File processing error:', error);
+        toast.error(`Failed to process ${file.name}.`);
+        return null;
+      }
+    };
+
+    // Process all files in parallel using the CAPTURED array
+    const results = await Promise.allSettled(fileArray.map(processFile));
+
+    // Collect successful attachments
+    const newAttachments: Attachment[] = [];
+    for (const result of results) {
+      if (result.status === 'fulfilled' && result.value) {
+        newAttachments.push(result.value);
+      }
+    }
+
+    // Update state with all new attachments at once
+    if (newAttachments.length > 0) {
+      setAttachments(prev => [...prev, ...newAttachments]);
     }
   };
 
-  const removeAttachment = () => {
-    setAttachment(undefined);
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -208,6 +252,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         type="file"
         ref={fileInputRef}
         onChange={handleFileSelect}
+        multiple
         className="hidden"
         accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.txt,.md"
       />
@@ -325,87 +370,129 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 {/* User Message */}
                 {msg.role === Role.USER ? (
                   <div className="flex flex-col items-end max-w-[80%]">
-                    {msg.attachment && (
-                      <>
-                        {/* Visual media (images/videos) with thumbnails */}
-                        {(msg.attachment.thumbnail || (msg.attachment.mimeType.startsWith('image/') && msg.attachment.data)) ? (
-                          <div className="flex gap-2 mb-2">
-                            {/* Card with thumbnail + description */}
-                            <div
-                              className={`rounded-2xl overflow-hidden border border-[var(--border-color)] shadow-lg max-w-[200px] bg-[var(--bg-primary)]/90 backdrop-blur-2xl cursor-pointer`}
-                              onClick={() => openAttachment(msg.attachment!.mimeType, msg.attachment!.data, msg.attachment!.thumbnail)}
-                            >
-                              <div className="relative">
-                                <img
-                                  src={msg.attachment.thumbnail || `data:${msg.attachment.mimeType};base64,${msg.attachment.data}`}
-                                  className="w-full h-auto"
-                                  alt="preview"
-                                />
-                                {msg.attachment.mimeType.startsWith('video/') && (
-                                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                    <span className="text-white text-2xl">▶</span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="px-3 pt-2 pb-3">
-                                <div className="text-slide-hover overflow-hidden whitespace-nowrap">
-                                  <p className={`text-slide-inner text-xs text-[var(--text-primary)] inline-block ${msg.attachment.name && msg.attachment.name.length > 28 ? 'needs-scroll' : ''}`}>
-                                    {msg.attachment.name || 'File'}
-                                    {msg.attachment.name && msg.attachment.name.length > 28 && (
-                                      <span className="pl-8">{msg.attachment.name}</span>
-                                    )}
-                                  </p>
-                                </div>
-                                <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-0.5">
-                                  {/* Show format: JPEG if using thumbnail, otherwise original format */}
-                                  {msg.attachment.isThumbnail ? 'JPEG' : msg.attachment.mimeType.split('/')[1]}
-                                  {/* Show size: thumbnail size + THUMB label, or original size */}
-                                  {msg.attachment.isThumbnail && msg.attachment.thumbnail
-                                    ? ` • ${formatFileSize(Math.round(msg.attachment.thumbnail.length * 0.75))} THUMB`
-                                    : (msg.attachment.size && ` • ${formatFileSize(msg.attachment.size)}`)
-                                  }
-                                  {msg.attachment.duration && ` • ${formatDuration(msg.attachment.duration)}`}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          /* Non-visual files (PDF, audio, docs) - compact bubble */
-                          <div className="flex items-center gap-2 mb-2">
-                            {/* Inactive indicator (Danger Icon) for persisted files with no data */}
-                            {msg.attachment.isActive === false && (
-                              <div className="flex-shrink-0 text-[var(--error-text)] opacity-60" title="File data not persisted">
-                                <AlertTriangle className="w-4 h-4" />
-                              </div>
-                            )}
+                    {getMessageAttachments(msg).length > 0 && (() => {
+                      const allAtts = getMessageAttachments(msg);
+                      const visualAtts = allAtts.filter(a => a.mimeType.startsWith('image/') || a.mimeType.startsWith('video/'));
+                      const otherAtts = allAtts.filter(a => !a.mimeType.startsWith('image/') && !a.mimeType.startsWith('video/'));
 
-                            <div
-                              className={`p-2 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-2xl shadow-lg flex items-center gap-3 max-w-[280px] ${msg.attachment.isActive === false ? 'opacity-50 grayscale' : ''} ${msg.attachment.data ? 'cursor-pointer' : ''}`}
-                              onClick={() => openFileAttachment(msg.attachment!)}
-                            >
-                              <div className="w-12 h-12 rounded-lg bg-[var(--bg-secondary)] overflow-hidden flex items-center justify-center flex-shrink-0">
-                                <span className="text-xl">{getFileTypeIcon(msg.attachment.mimeType)}</span>
+                      return (
+                        <div className="flex flex-col gap-2 mb-2 items-end">
+
+                          {/* Visual Stack for > 1 items */}
+                          {visualAtts.length > 1 && (
+                            <MediaStack
+                              attachments={visualAtts}
+                              onOpen={(att) => openAttachment(att.mimeType, att.data, att.thumbnail)}
+                              messageId={msg.id}
+                            />
+                          )}
+
+                          {/* Individual Visual Item if exactly 1 (Solid BG + Fullscreen only via button) */}
+                          {visualAtts.length === 1 && visualAtts.map((att, attIdx) => {
+                            const hasData = !!att.data;
+                            // Show original ONLY if we actually have the full base64 data
+                            const showOriginal = hasData;
+
+                            const imgSrc = showOriginal
+                              ? `data:${att.mimeType};base64,${att.data}`
+                              : (att.thumbnail || '');
+
+                            const ext = att.mimeType.split('/')[1]?.toUpperCase() || 'FILE';
+                            let sizeStr = '';
+                            if (showOriginal) {
+                              sizeStr = formatFileSize(att.size || 0);
+                            } else {
+                              const src = att.thumbnail || '';
+                              const base64Content = src.split(',')[1] || '';
+                              const byteSize = base64Content ? Math.round((base64Content.length * 3) / 4) : 0;
+                              const finalSize = byteSize || (att.size || 0);
+                              sizeStr = `${formatFileSize(finalSize)} (THUMB)`;
+                            }
+
+                            // Check if name overflows (approx: 20 chars for this container width)
+                            const nameOverflows = att.name && att.name.length > 20;
+
+                            return (
+                              <div key={`vis-${attIdx}`}
+                                className="rounded-2xl overflow-hidden border border-[var(--border-color)] shadow-lg max-w-[240px] bg-[var(--bg-primary)] group/footer"
+                              >
+                                <div className="relative">
+                                  <img
+                                    src={imgSrc}
+                                    className="w-full h-auto max-h-[200px] object-cover"
+                                    alt="preview"
+                                  />
+                                  {att.mimeType.startsWith('video/') && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                      <span className="text-white text-2xl">▶</span>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="px-3 pt-2 pb-3 bg-[var(--bg-primary)] flex items-center justify-between gap-2">
+                                  <div className="min-w-0 flex-1 overflow-hidden">
+                                    <div className="w-full overflow-hidden">
+                                      <p className={`text-xs font-medium text-[var(--text-primary)] leading-tight whitespace-nowrap
+                                                     transition-none 
+                                                     ${nameOverflows ? 'group-hover/footer:transition-transform group-hover/footer:duration-[3s] group-hover/footer:ease-linear group-hover/footer:-translate-x-[60%]' : ''}`}>
+                                        {att.name || 'File'}
+                                      </p>
+                                    </div>
+                                    <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-0.5">
+                                      {`${ext} • ${sizeStr}`}
+                                      {att.duration && ` • ${formatDuration(att.duration)}`}
+                                    </p>
+                                  </div>
+                                  <button
+                                    className="p-1.5 hover:bg-[var(--bg-secondary)] rounded-lg transition-colors text-[var(--text-primary)]"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openAttachment(att.mimeType, att.data, att.thumbnail);
+                                    }}
+                                    title="Open Fullscreen"
+                                  >
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="text-slide-hover overflow-hidden whitespace-nowrap">
-                                  <p className={`text-slide-inner text-xs text-[var(--text-primary)] inline-block ${msg.attachment.name && msg.attachment.name.length > 28 ? 'needs-scroll' : ''}`}>
-                                    {msg.attachment.name || 'File'}
-                                    {msg.attachment.name && msg.attachment.name.length > 28 && (
-                                      <span className="pl-8">{msg.attachment.name}</span>
-                                    )}
+                            );
+                          })}
+
+                          {/* Non-visual files */}
+                          {otherAtts.map((att, attIdx) => (
+                            <div key={`file-${attIdx}`} className="flex items-center gap-2">
+                              {att.isActive === false && (
+                                <div className="flex-shrink-0 text-[var(--error-text)] opacity-60" title="File data not persisted">
+                                  <AlertTriangle className="w-4 h-4" />
+                                </div>
+                              )}
+                              <div
+                                className={`p-2 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-2xl shadow-lg flex items-center gap-3 max-w-[280px] ${att.isActive === false ? 'opacity-50 grayscale' : ''} ${att.data ? 'cursor-pointer' : ''}`}
+                                onClick={() => openFileAttachment(att)}
+                              >
+                                <div className="w-12 h-12 rounded-lg bg-[var(--bg-secondary)] overflow-hidden flex items-center justify-center flex-shrink-0">
+                                  <span className="text-xl">{getFileTypeIcon(att.mimeType)}</span>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-slide-hover overflow-hidden whitespace-nowrap">
+                                    <p className={`text-slide-inner text-xs text-[var(--text-primary)] inline-block ${att.name && att.name.length > 28 ? 'needs-scroll' : ''}`}>
+                                      {att.name || 'File'}
+                                      {att.name && att.name.length > 28 && (
+                                        <span className="pl-8">{att.name}</span>
+                                      )}
+                                    </p>
+                                  </div>
+                                  <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-0.5">
+                                    {att.mimeType.split('/')[1]}
+                                    {att.size && ` • ${formatFileSize(att.size)}`}
+                                    {att.duration && ` • ${formatDuration(att.duration)}`}
                                   </p>
                                 </div>
-                                <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-0.5">
-                                  {msg.attachment.mimeType.split('/')[1]}
-                                  {msg.attachment.size && ` • ${formatFileSize(msg.attachment.size)}`}
-                                  {msg.attachment.duration && ` • ${formatDuration(msg.attachment.duration)}`}
-                                </p>
                               </div>
                             </div>
-                          </div>
-                        )}
-                      </>
-                    )}
+                          ))}
+                        </div>
+                      );
+                    })()}
                     {msg.content && (
                       <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-[2rem] px-8 py-5 text-[17px] text-[var(--text-primary)] leading-relaxed shadow-lg break-words hyphens-auto whitespace-pre-wrap transition-all duration-500">
                         {msg.content}
@@ -454,29 +541,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
           <div className="relative group">
 
-            {/* Attachment Preview - Glass Panel popping up */}
-            {attachment && (
-              <div className="absolute bottom-full left-0 mb-4 p-2 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-2xl shadow-2xl flex items-center gap-3 animate-fade-up">
-                <div className="w-12 h-12 rounded-lg bg-[var(--bg-secondary)] overflow-hidden flex items-center justify-center">
-                  {attachment.thumbnail ? (
-                    <img src={attachment.thumbnail} className="w-full h-full object-cover" alt="preview" />
-                  ) : attachment.mimeType.startsWith('image/') && attachment.data ? (
-                    <img src={`data:${attachment.mimeType};base64,${attachment.data}`} className="w-full h-full object-cover" alt="preview" />
-                  ) : (
-                    <span className="text-lg">{getFileTypeIcon(attachment.mimeType)}</span>
-                  )}
-                </div>
-                <div className="pr-2">
-                  <p className="text-xs text-[var(--text-primary)] max-w-[150px] truncate">{attachment.name || 'File'}</p>
-                  <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
-                    {attachment.mimeType.split('/')[1]}
-                    {attachment.size && ` • ${formatFileSize(attachment.size)}`}
-                    {attachment.duration && ` • ${formatDuration(attachment.duration)}`}
-                  </p>
-                </div>
-                <button onClick={removeAttachment} className="p-1 hover:bg-[var(--bg-secondary)] rounded-full transition-colors duration-500">
-                  <X className="w-4 h-4 text-[var(--text-secondary)]" />
-                </button>
+            {/* Attachments Preview - Glass Panel popping up */}
+            {attachments.length > 0 && (
+              <div className="absolute bottom-full left-0 mb-4 p-2 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-2xl shadow-2xl flex flex-wrap gap-2 animate-fade-up max-h-40 overflow-y-auto max-w-full w-max">
+                {attachments.map((att, index) => (
+                  <div key={index} className="flex items-center gap-2 p-1 pr-2 bg-[var(--bg-secondary)]/50 rounded-lg">
+                    <div className="w-10 h-10 rounded-lg bg-[var(--bg-secondary)] overflow-hidden flex items-center justify-center flex-shrink-0">
+                      {att.thumbnail ? (
+                        <img src={att.thumbnail} className="w-full h-full object-cover" alt="preview" />
+                      ) : att.mimeType.startsWith('image/') && att.data ? (
+                        <img src={`data:${att.mimeType};base64,${att.data}`} className="w-full h-full object-cover" alt="preview" />
+                      ) : (
+                        <span className="text-sm">{getFileTypeIcon(att.mimeType)}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0 max-w-[100px]">
+                      <p className="text-[10px] text-[var(--text-primary)] truncate">{att.name || 'File'}</p>
+                      <p className="text-[8px] text-[var(--text-muted)] uppercase">
+                        {att.mimeType.split('/')[1]}
+                        {att.size && ` • ${formatFileSize(att.size)}`}
+                      </p>
+                    </div>
+                    <button onClick={() => removeAttachment(index)} className="p-1 hover:bg-[var(--bg-secondary)] rounded-full transition-colors duration-500 flex-shrink-0">
+                      <X className="w-3 h-3 text-[var(--text-secondary)]" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -487,9 +577,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading}
-                className="m-2 p-3 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-500"
+                className="m-2 p-3 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-500 relative"
               >
                 <Paperclip className="w-5 h-5 stroke-[var(--text-secondary)]" />
+                {attachments.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-full text-[10px] font-bold flex items-center justify-center">
+                    {attachments.length}
+                  </span>
+                )}
               </button>
 
               <textarea
@@ -505,12 +600,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
               <button
                 onClick={() => isLoading ? onStop() : handleSubmit()}
-                disabled={(!input.trim() && !attachment && !isLoading)}
+                disabled={(!input.trim() && attachments.length === 0 && !isLoading)}
                 className={`
                     m-2 p-3 rounded-full flex items-center justify-center min-w-[3rem] min-h-[3rem] transition-all duration-500
                     ${isLoading
                     ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:scale-105 hover:shadow-[0_0_20px_var(--input-glow)]'
-                    : (input.trim() || attachment) && !unavailableCode
+                    : (input.trim() || attachments.length > 0) && !unavailableCode
                       ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:scale-105 hover:shadow-[0_0_20px_var(--input-glow)] active:scale-95'
                       : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] cursor-not-allowed opacity-50'}
                     `}

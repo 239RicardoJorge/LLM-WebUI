@@ -213,17 +213,25 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                     borderRadius: '12px'
                                 } : {}}
                             >
-                                <button
+                                <div
                                     onClick={() => !isEditing && onModelChange(model.id)}
                                     className={`
-                                      w-full p-3 rounded-xl border text-left relative transition-all duration-300 ease-out
+                                      w-full p-3 rounded-xl border text-left relative transition-all duration-300 ease-out cursor-pointer
                                       ${isActive
                                             ? 'bg-[var(--bg-glass)] border-[var(--border-color)] shadow-lg hover:border-[var(--button-glow)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1),inset_0_0_8px_var(--button-glow)]'
                                             : 'bg-transparent border-transparent hover:bg-[var(--bg-glass)]'}
                                       ${isUnavailable ? 'border-red-500/10 bg-red-500/5' : ''}
-                                      ${isEditing ? 'bg-[var(--bg-glass)] border-[var(--border-color)] shadow-none' : ''}
+                                      ${isEditing ? 'bg-[var(--bg-glass)] border-[var(--border-color)] shadow-none cursor-default' : ''}
                                   `}
                                     style={{ overflow: 'visible' }}
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            if (!isEditing) onModelChange(model.id);
+                                        }
+                                    }}
                                 >
                                     {/* First row: Name + Status + Ball Container */}
                                     <div className="relative mb-1 flex items-start justify-between min-h-[1.25em]">
@@ -364,7 +372,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                             </div>
                                         </div>
                                     </div>
-                                </button>
+                                </div>
                             </div>
                         );
                     })

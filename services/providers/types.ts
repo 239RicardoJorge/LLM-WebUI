@@ -10,7 +10,7 @@ export interface ILLMProvider {
         modelId: string,
         apiKey: string,
         message: string,
-        attachment?: Attachment,
+        attachments?: Attachment[],
         systemInstruction?: string,
         signal?: AbortSignal
     ): AsyncGenerator<string, void, unknown>;

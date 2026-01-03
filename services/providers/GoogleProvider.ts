@@ -48,15 +48,19 @@ export class GoogleProvider implements ILLMProvider {
         modelId: string,
         apiKey: string,
         message: string,
-        attachment?: Attachment,
+        attachments?: Attachment[],
         systemInstruction?: string,
         signal?: AbortSignal
     ): AsyncGenerator<string, void, unknown> {
 
         // Construct new user message
         let parts: any[] = [];
-        if (attachment) {
-            parts.push({ inlineData: { mimeType: attachment.mimeType, data: attachment.data } });
+
+        // Add all attachments as inline data
+        if (attachments && attachments.length > 0) {
+            for (const attachment of attachments) {
+                parts.push({ inlineData: { mimeType: attachment.mimeType, data: attachment.data } });
+            }
         }
         parts.push({ text: message });
 
@@ -153,10 +157,21 @@ export class GoogleProvider implements ILLMProvider {
         for (const msg of messages) {
             if (msg.role === 'user') {
                 const parts: any[] = [];
-                // Add attachment if present and active
+
+                // Handle new attachments array (if present)
+                if (msg.attachments && Array.isArray(msg.attachments)) {
+                    for (const att of msg.attachments) {
+                        if (att.data && att.isActive !== false) {
+                            parts.push({ inlineData: { mimeType: att.mimeType, data: att.data } });
+                        }
+                    }
+                }
+
+                // Handle legacy single attachment
                 if (msg.attachment && msg.attachment.data && msg.attachment.isActive !== false) {
                     parts.push({ inlineData: { mimeType: msg.attachment.mimeType, data: msg.attachment.data } });
                 }
+
                 if (msg.content) {
                     parts.push({ text: msg.content });
                 }
