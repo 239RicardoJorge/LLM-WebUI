@@ -88,8 +88,9 @@ const ApiKeyConfig: React.FC<ApiKeyConfigProps> = ({
 
             // Reset to default state after 2 seconds
             setTimeout(() => setIsSaved(false), 2000);
-        } catch (error: any) {
-            const msg = error.message || "Validation Failed. Please check your keys.";
+        } catch (error: unknown) {
+            const err = error as Error;
+            const msg = err.message || "Validation Failed. Please check your keys.";
             setValidationError(msg);
             toast.error(msg, { duration: 2000 });
             setIsSaved(false);

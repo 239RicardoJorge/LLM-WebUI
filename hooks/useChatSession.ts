@@ -13,6 +13,7 @@ import {
     applyPendingSaves,
     DEFAULT_CONVERSATION_ID
 } from '../utils/storage';
+import { categorizeError } from '../utils/errorCategorization';
 
 interface UseChatSessionProps {
     currentModel: string;
@@ -316,25 +317,20 @@ export const useChatSession = ({
                     msg.id === botMsgId ? { ...msg, content: accumulatedText } : msg
                 ));
             }
-        } catch (error: any) {
-            if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+        } catch (error: unknown) {
+            const err = error as Error & { name?: string };
+            if (err.name === 'AbortError' || err.message?.includes('aborted')) {
                 return; // Silent exit
             }
             console.error("Chat error:", error);
 
-            let errorMessage = error.message || 'Connection interrupted';
+            const errorMessage = err.message || 'Connection interrupted';
 
             // Rollback
             setMessages(prev => prev.filter(msg => msg.id !== newUserMsg.id));
 
-            // Determine error code
-            let errorCode = "Error";
-            const lowerError = errorMessage.toLowerCase();
-            if (lowerError.includes('429') || lowerError.includes('quota') || lowerError.includes('rate limit') || lowerError.includes('tpm') || (lowerError.includes('too large') && lowerError.includes('model'))) {
-                errorCode = "429";
-            } else if (lowerError.includes('400') || lowerError.includes('invalid request')) {
-                errorCode = "400";
-            }
+            // Use centralized error categorization
+            const errorCode = categorizeError(errorMessage);
 
             // Disable model ONLY for 429 (rate limit) errors, not 400
             if (errorCode === "429") {
