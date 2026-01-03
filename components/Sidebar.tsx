@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react';
 import { ApiKeys, ModelOption } from '../types';
 import ApiKeyConfig from './sidebar/ApiKeyConfig';
 import ModelSelector from './sidebar/ModelSelector';
+import ResponseProfile from './sidebar/ResponseProfile';
 import SystemStatus from './sidebar/SystemStatus';
 
 interface SidebarProps {
@@ -80,6 +81,8 @@ const Sidebar: React.FC<SidebarProps> = ({
               isRefreshing={isRefreshing}
               onEditingChange={setIsEditingTags}
             />
+
+            <ResponseProfile />
 
           </div>
 

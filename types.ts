@@ -5,6 +5,57 @@ export enum Role {
 
 export type Provider = 'google' | 'groq';
 
+// Response Profile settings for LLM response style
+export interface ResponseProfile {
+  // Faders (0-5 scale)
+  faders: {
+    comunicacao: {
+      casual_formal: number;       // A: muito casual → formal/técnico
+      curto_extenso: number;       // B: respostas mínimas → exaustivo
+      reativo_proativo: number;    // C: responde apenas → guia ativamente
+      direto_didatico: number;     // D: apenas resposta → estilo professor
+      cauteloso_assertivo: number; // E: sempre qualifica → decisivo
+      convencional_criativo: number; // F: só padrão → exploratório
+      frio_empatico: number;       // G: técnico → altamente empático
+    };
+    raciocinio: {
+      pragmatico_rigoroso: number; // H: resultado rápido → rigor formal
+      segue_questiona: number;     // I: executa → desafia ativamente
+      pede_assume: number;         // J: sempre pede info → decide e segue
+    };
+  };
+  // Absolute rules (toggles)
+  regras: {
+    nuncaMencionarIA: boolean;
+    nuncaEmojis: boolean;
+    nuncaInventarAPIs: boolean;
+    nuncaSairDominio: boolean;
+    nuncaOutroIdioma: boolean;
+  };
+  // Role select
+  papel: 'assistente' | 'revisor' | 'arquiteto' | 'tutor' | 'consultor';
+  // Scope checkboxes
+  escopo: {
+    podeEscreverCodigo: boolean;
+    podeRefatorar: boolean;
+    podeExplicar: boolean;
+    podeSugerirBibliotecas: boolean;
+    podeOpinarArquitetura: boolean;
+  };
+  // Response patterns
+  padroes: {
+    comecarCom: 'direta' | 'resumo' | 'diagnostico';
+    terminarCom: 'pergunta' | 'sugestao' | 'nada';
+  };
+}
+
+// Saved profile with name and ID
+export interface SavedProfile {
+  id: string;
+  name: string;
+  data: ResponseProfile;
+}
+
 export interface Attachment {
   mimeType: string;
   data?: string;          // Base64 - only in session memory (not persisted)
