@@ -172,7 +172,7 @@ const MediaStack: React.FC<MediaStackProps> = ({ attachments, onOpen, align = 'r
               rounded-2xl border border-[var(--border-color)]
               bg-[var(--bg-primary)] shadow-lg overflow-hidden cursor-pointer
               transition-[transform,shadow] duration-500 group/footer
-              ${isTopCard ? 'ring-1 ring-[var(--text-primary)]/20 shadow-[0_20px_50px_rgba(0,0,0,0.2)]' : 'hover:shadow-2xl'}
+              ${isTopCard ? 'shadow-lg' : 'hover:shadow-2xl'}
             `}
                         style={style}
                         onClick={(e) => {
