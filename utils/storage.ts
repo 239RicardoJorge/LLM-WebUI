@@ -20,6 +20,19 @@ interface ConversationRecord {
     updatedAt: number;
 }
 
+/**
+ * Strip attachment data for storage.
+ * Images keep isActive:true (have displayable thumbnail).
+ * Other files get isActive:false (no displayable content after data stripped).
+ */
+const stripAttachmentData = (attachment: Attachment): Attachment => {
+    const { data, ...attachmentMeta } = attachment;
+    return {
+        ...attachmentMeta,
+        isActive: attachment.mimeType.startsWith('image/')
+    };
+};
+
 let dbInstance: IDBDatabase | null = null;
 
 /**
@@ -66,18 +79,6 @@ export const saveMessages = async (conversationId: string, messages: ChatMessage
         const store = transaction.objectStore(STORE_CONVERSATIONS);
 
         // Strip attachment data before saving (only keep thumbnail + metadata)
-        // Helper function to strip data from a single attachment
-        const stripAttachmentData = (attachment: Attachment): Attachment => {
-            if (attachment.mimeType.startsWith('image/')) {
-                const { data, ...attachmentMeta } = attachment;
-                return { ...attachmentMeta, isActive: true };
-            } else {
-                // Non-images: Keep metadata, STRIP data, set INACTIVE
-                const { data, ...attachmentMeta } = attachment;
-                return { ...attachmentMeta, isActive: false };
-            }
-        };
-
         const messagesForStorage = messages.map(msg => {
             let result = { ...msg };
 
@@ -208,18 +209,6 @@ export const migrateFromLocalStorage = async (oldKey: string, conversationId: st
  * IndexedDB is async and may not complete before page unload
  */
 export const saveMessagesSync = (conversationId: string, messages: ChatMessage[]): void => {
-    // Helper function to strip data from a single attachment
-    const stripAttachmentData = (attachment: Attachment): Attachment => {
-        if (attachment.mimeType.startsWith('image/')) {
-            const { data, ...attachmentMeta } = attachment;
-            return { ...attachmentMeta, isActive: true };
-        } else {
-            // Non-images: Keep metadata, STRIP data, set INACTIVE
-            const { data, ...attachmentMeta } = attachment;
-            return { ...attachmentMeta, isActive: false };
-        }
-    };
-
     // Use localStorage for immediate sync save (beforeunload fallback)
     // Strip attachment data to prevent quota errors and ensure originals are not persisted
     const stripped = messages.map(msg => {
