@@ -87,19 +87,12 @@ export const useChatSession = ({
             };
 
             const processed = loaded.map((msg: ChatMessage) => {
-                let result = { ...msg };
-
-                // Handle new attachments array
-                if (msg.attachments && Array.isArray(msg.attachments)) {
-                    result.attachments = msg.attachments.map(restoreAttachment);
-                }
-
-                // Handle legacy single attachment
-                if (msg.attachment) {
-                    result.attachment = restoreAttachment(msg.attachment);
-                }
-
-                return result;
+                // Handle attachments array - restore isActive/isThumbnail flags
+                if (!msg.attachments || !Array.isArray(msg.attachments)) return msg;
+                return {
+                    ...msg,
+                    attachments: msg.attachments.map(restoreAttachment)
+                };
             });
 
             setMessages(processed);

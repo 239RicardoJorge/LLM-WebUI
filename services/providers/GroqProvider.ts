@@ -106,7 +106,7 @@ export class GroqProvider implements ILLMProvider {
         // 2. History (Prepend)
         if (this.history.length > 0) {
             this.history.forEach(msg => {
-                if (!msg.content && !msg.attachment) return;
+                if (!msg.content && (!msg.attachments || msg.attachments.length === 0)) return;
                 const role = msg.role === 'model' ? 'assistant' : msg.role;
                 messages.push({ role, content: msg.content });
             });

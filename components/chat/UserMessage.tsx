@@ -19,15 +19,9 @@ const UserMessage: React.FC<UserMessageProps> = ({
     onOpenAttachment,
     onOpenFileAttachment
 }) => {
-    // Get attachments from message (supports both new 'attachments' array and legacy 'attachment' field)
+    // Get attachments from message
     const getMessageAttachments = (msg: ChatMessage): Attachment[] => {
-        if (msg.attachments && msg.attachments.length > 0) {
-            return msg.attachments;
-        }
-        if (msg.attachment) {
-            return [msg.attachment];
-        }
-        return [];
+        return msg.attachments || [];
     };
 
     const allAtts = getMessageAttachments(message);

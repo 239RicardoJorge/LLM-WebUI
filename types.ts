@@ -27,8 +27,6 @@ export interface ChatMessage {
   timestamp: number;
   isError?: boolean;
   attachments?: Attachment[];  // Multiple attachments supported
-  /** @deprecated Use attachments array instead */
-  attachment?: Attachment;     // Legacy single attachment for backwards compatibility
 }
 
 export interface ModelOption {

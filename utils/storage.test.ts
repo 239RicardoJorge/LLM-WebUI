@@ -2,6 +2,7 @@
  * Tests for IndexedDB storage wrapper
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Role } from '../types';
 
 // Mock IndexedDB for testing in Node environment
 const mockStore: Record<string, any> = {};
@@ -87,7 +88,7 @@ describe('Storage Module', () => {
             const { saveMessagesSync } = await import('./storage');
 
             const messages = [
-                { id: '1', role: 'user', content: 'Test' }
+                { id: '1', role: Role.USER, content: 'Test', timestamp: Date.now() }
             ];
 
             saveMessagesSync('test-convo', messages);

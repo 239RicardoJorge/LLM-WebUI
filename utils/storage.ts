@@ -80,19 +80,11 @@ export const saveMessages = async (conversationId: string, messages: ChatMessage
 
         // Strip attachment data before saving (only keep thumbnail + metadata)
         const messagesForStorage = messages.map(msg => {
-            let result = { ...msg };
-
-            // Handle new attachments array
-            if (msg.attachments && Array.isArray(msg.attachments)) {
-                result.attachments = msg.attachments.map(stripAttachmentData);
-            }
-
-            // Handle legacy single attachment
-            if (msg.attachment) {
-                result.attachment = stripAttachmentData(msg.attachment);
-            }
-
-            return result;
+            if (!msg.attachments || !Array.isArray(msg.attachments)) return msg;
+            return {
+                ...msg,
+                attachments: msg.attachments.map(stripAttachmentData)
+            };
         });
 
         const record: ConversationRecord = {
@@ -108,32 +100,32 @@ export const saveMessages = async (conversationId: string, messages: ChatMessage
             transaction.onerror = () => reject(transaction.error);
         });
     } catch (error) {
-        // Fallback to localStorage (also strip data using the same helper)
-        const stripFallback = (attachment: Attachment): Attachment => {
-            if (attachment.mimeType.startsWith('image/')) {
-                const { data, ...meta } = attachment;
-                return { ...meta, isActive: true };
-            } else {
-                const { data, ...meta } = attachment;
-                return { ...meta, isActive: false };
-            }
-        };
-
+        // Fallback to localStorage - reuse existing stripAttachmentData helper
         const stripped = messages.map(msg => {
-            let result = { ...msg };
-
-            if (msg.attachments && Array.isArray(msg.attachments)) {
-                result.attachments = msg.attachments.map(stripFallback);
-            }
-
-            if (msg.attachment) {
-                result.attachment = stripFallback(msg.attachment);
-            }
-
-            return result;
+            if (!msg.attachments || !Array.isArray(msg.attachments)) return msg;
+            return {
+                ...msg,
+                attachments: msg.attachments.map(stripAttachmentData)
+            };
         });
         localStorage.setItem(`ccs_messages_${conversationId}`, JSON.stringify(stripped));
     }
+};
+
+/**
+ * Migrate legacy single attachment to attachments array
+ */
+const migrateMessageAttachments = (msg: ChatMessage & { attachment?: Attachment }): ChatMessage => {
+    // If legacy attachment exists, migrate it to attachments array
+    if (msg.attachment) {
+        const existingAttachments = msg.attachments || [];
+        const { attachment, ...rest } = msg;
+        return {
+            ...rest,
+            attachments: [attachment, ...existingAttachments]
+        };
+    }
+    return msg;
 };
 
 /**
@@ -149,7 +141,9 @@ export const loadMessages = async (conversationId: string): Promise<ChatMessage[
         return new Promise((resolve, reject) => {
             request.onsuccess = () => {
                 const record = request.result as ConversationRecord | undefined;
-                resolve(record?.messages || []);
+                const messages = record?.messages || [];
+                // Migrate legacy attachment format
+                resolve(messages.map(migrateMessageAttachments));
             };
             request.onerror = () => reject(request.error);
         });
@@ -157,7 +151,10 @@ export const loadMessages = async (conversationId: string): Promise<ChatMessage[
         // Fallback to localStorage
         try {
             const saved = localStorage.getItem(`ccs_messages_${conversationId}`);
-            return saved ? JSON.parse(saved) : [];
+            if (!saved) return [];
+            const messages = JSON.parse(saved);
+            // Migrate legacy attachment format
+            return messages.map(migrateMessageAttachments);
         } catch {
             return [];
         }
@@ -212,19 +209,11 @@ export const saveMessagesSync = (conversationId: string, messages: ChatMessage[]
     // Use localStorage for immediate sync save (beforeunload fallback)
     // Strip attachment data to prevent quota errors and ensure originals are not persisted
     const stripped = messages.map(msg => {
-        let result = { ...msg };
-
-        // Handle new attachments array
-        if (msg.attachments && Array.isArray(msg.attachments)) {
-            result.attachments = msg.attachments.map(stripAttachmentData);
-        }
-
-        // Handle legacy single attachment
-        if (msg.attachment) {
-            result.attachment = stripAttachmentData(msg.attachment);
-        }
-
-        return result;
+        if (!msg.attachments || !Array.isArray(msg.attachments)) return msg;
+        return {
+            ...msg,
+            attachments: msg.attachments.map(stripAttachmentData)
+        };
     });
     localStorage.setItem(`ccs_messages_pending_${conversationId}`, JSON.stringify(stripped));
 };

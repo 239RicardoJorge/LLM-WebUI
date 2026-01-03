@@ -65,7 +65,7 @@ export class GoogleProvider implements ILLMProvider {
         }
         parts.push({ text: message });
 
-        const newUserMessage = { role: 'user', parts };
+        const newUserMessage: GoogleMessage = { role: 'user', parts };
         this.messageHistory.push(newUserMessage);
 
         // Prepare full history (contents)
@@ -166,11 +166,6 @@ export class GoogleProvider implements ILLMProvider {
                             parts.push({ inlineData: { mimeType: att.mimeType, data: att.data } });
                         }
                     }
-                }
-
-                // Handle legacy single attachment
-                if (msg.attachment && msg.attachment.data && msg.attachment.isActive !== false) {
-                    parts.push({ inlineData: { mimeType: msg.attachment.mimeType, data: msg.attachment.data } });
                 }
 
                 if (msg.content) {
