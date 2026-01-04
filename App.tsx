@@ -7,6 +7,7 @@ import { APP_VERSION } from './config/version';
 import { useModelManagement } from './hooks/useModelManagement';
 import { useChatSession } from './hooks/useChatSession';
 import { useSettingsStore } from './store/settingsStore';
+import QuickChat from './components/QuickChat';
 
 const App: React.FC = () => {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -112,6 +113,9 @@ const App: React.FC = () => {
           </div>
           <ThemeToggle />
         </div>
+
+
+
         <ChatInterface
           messages={messages}
           isLoading={isLoading}
@@ -125,6 +129,9 @@ const App: React.FC = () => {
 
         />
       </main>
+
+      {/* Floating Quick Chat - Moved outside main to avoid stacking context issues */}
+      <QuickChat currentModel={currentModel} availableModels={availableModels} />
     </div>
   );
 };

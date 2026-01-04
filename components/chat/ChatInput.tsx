@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import { ArrowUp, Paperclip, X, Square } from 'lucide-react';
+import { ArrowUp, Paperclip, X, Square, Zap, Terminal } from 'lucide-react';
+import { useSettingsStore } from '../../store/settingsStore';
 import { toast } from 'sonner';
 import { Attachment } from '../../types';
 import { validateFileSize, processAttachment, formatFileSize, getFileTypeIcon } from '../../utils/thumbnails';
@@ -122,8 +123,26 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.txt,.md"
             />
 
-            <div className="max-w-3xl mx-auto pointer-events-auto">
-                <div className="relative group">
+
+
+            <div className="max-w-3xl mx-auto pointer-events-auto flex items-end gap-3 px-4 md:px-0">
+                <div className="relative group flex-1">
+                    {/* Quick Chat Switch - External Button (RIGHT) - Absolute Positioning relative to Input Container */}
+                    <div className="absolute -right-16 bottom-4 z-30">
+                        <button
+                            onClick={() => useSettingsStore.getState().setQuickChatOpen(!useSettingsStore.getState().isQuickChatOpen)}
+                            className={`
+                                w-12 h-12 rounded-full border border-[var(--border-color)] shadow-2xl flex items-center justify-center transition-all duration-500
+                                ${useSettingsStore.getState().isQuickChatOpen
+                                    ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] scale-95 ring-1 ring-[var(--border-color)]'
+                                    : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:scale-105 hover:bg-[var(--bg-secondary)]/80'}
+                            `}
+                            title="Quick Chat"
+                        >
+                            <Terminal className="w-5 h-5 stroke-[2.5]" />
+                        </button>
+                    </div>
+
                     {/* Attachments Preview */}
                     {attachments.length > 0 && (
                         <div className="absolute bottom-full left-0 mb-4 p-2 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border border-[var(--border-color)] rounded-2xl shadow-2xl flex flex-wrap gap-2 animate-fade-up max-h-40 overflow-y-auto max-w-full w-max">
@@ -201,8 +220,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
                         </button>
                     </div>
                 </div>
+
             </div>
         </div>
+
     );
 };
 
